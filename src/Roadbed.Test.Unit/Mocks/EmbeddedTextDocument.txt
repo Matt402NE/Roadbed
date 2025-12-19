@@ -1,0 +1,1 @@
+﻿This is the content of the embedded text document used for unit testing.
