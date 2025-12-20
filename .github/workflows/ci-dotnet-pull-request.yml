@@ -3,7 +3,7 @@
 
 name: On Pull Request - All Branches
 
-on: [pull-request]
+on: [pull_request]
 
 jobs:
   build:
