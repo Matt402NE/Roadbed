@@ -12,6 +12,7 @@
 
   <ItemGroup>
     <Compile Remove="Net\Mocks\IntegrationObjectAttribute.cs" />
+    <Compile Remove="Net\NetServiceTests.cs" />
   </ItemGroup>
 
   <ItemGroup>
