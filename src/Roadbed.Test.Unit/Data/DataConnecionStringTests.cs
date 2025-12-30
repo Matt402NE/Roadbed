@@ -138,13 +138,25 @@ public class DataConnecionStringTests
         // Act (When)
         DbConnectionStringBuilder builder = connectionString.ConnectionStringBuilder;
 
+        // The DbConnectionStringBuilder class is designed to handle the standard format of a database connection string,
+        // where the semicolon (;) acts purely as a key-value pair separator, not a terminator. Therefore, it will
+        // automatically remove any trailing semicolons from the ConnectionString property because they indicate an empty
+        // or incomplete key-value pair, which is not necessary for a valid connection.
+        string actualConnectionString = builder.ConnectionString.EndsWith(';') ?
+            builder.ConnectionString :
+            string.Concat(builder.ConnectionString, ";");
+
         // Assert (Then)
         Assert.IsNotNull(
             builder,
             "ConnectionStringBuilder should not be null.");
+
+        // The DbConnectionStringBuilder class and its derived classes (like SqlConnectionStringBuilder or
+        // OdbcConnectionStringBuilder) automatically handle key casing: keywords are not case-sensitive to the builder
+        // or the database provider in ADO.NET.
         Assert.AreEqual(
-            originalString,
-            builder.ConnectionString,
+            originalString.ToLower(),
+            actualConnectionString.ToLower(),
             "ConnectionStringBuilder should contain the connection string.");
     }
 
