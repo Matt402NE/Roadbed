@@ -44,7 +44,7 @@ public class IoCsvFile<T>
         // Validate "In" Values
         ValidateFileInfo(fileInfo);
 
-        if (fileInfo!.Extension!.ToLower() != "csv")
+        if (fileInfo!.Extension!.ToLower() != ".csv")
         {
             throw new ArgumentException("File extension isn't 'CSV'.", nameof(fileInfo));
         }
