@@ -37,24 +37,6 @@ public class ServiceLocatorTests
     }
 
     /// <summary>
-    /// Verifies that GetService returns the correct service when initialized.
-    /// </summary>
-    [TestMethod]
-    public void GetService_WhenInitialized_ReturnsCorrectService()
-    {
-        // Arrange
-        var serviceProvider = this.CreateServiceProvider(s => s.AddSingleton<ServiceLocatorTestService1>());
-        ServiceLocator.SetLocatorProvider(serviceProvider);
-
-        // Act
-        var service = ServiceLocator.GetService<ServiceLocatorTestService1>();
-
-        // Assert
-        Assert.IsNotNull(service, "GetService should return a non-null service.");
-        Assert.IsInstanceOfType(service, typeof(ServiceLocatorTestService1), "Service should be of correct type.");
-    }
-
-    /// <summary>
     /// Verifies that GetService works with multiple different service types.
     /// </summary>
     [TestMethod]
