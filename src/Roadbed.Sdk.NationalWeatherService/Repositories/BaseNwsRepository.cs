@@ -1,6 +1,9 @@
 ﻿namespace Roadbed.Sdk.NationalWeatherService.Repositories;
 
 using System;
+using System.Collections.Generic;
+using System.Net.Http;
+using Microsoft.Extensions.Logging;
 using Roadbed.Common;
 using Roadbed.Messaging;
 using Roadbed.Net;
@@ -9,6 +12,7 @@ using Roadbed.Net;
 /// Base repository for National Weather Service SDK.
 /// </summary>
 internal abstract class BaseNwsRepository
+    : BaseClassWithLogging<BaseNwsRepository>
 {
     #region Public Fields
 
@@ -19,54 +23,102 @@ internal abstract class BaseNwsRepository
 
     #endregion Public Fields
 
-    #region Public Constructors
+    #region Protected Constructors
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BaseNwsRepository"/> class.
     /// </summary>
     /// <param name="request">Messaging request for messages sent to API.</param>
-    public BaseNwsRepository(MessagingMessageRequest<CommonKeyValuePair<string, string>> request)
+    /// <exception cref="ArgumentNullException">Thrown when request is null.</exception>
+    protected BaseNwsRepository(MessagingMessageRequest<CommonKeyValuePair<string, string>> request)
+        : base(ServiceLocator.GetService<ILoggerFactory>())
     {
+        ArgumentNullException.ThrowIfNull(request);
         this.Request = request;
     }
 
-    #endregion Public Constructors
-
-    #region Public Properties
+    /// <summary>
+    /// Initializes a new instance of the <see cref="BaseNwsRepository"/> class.
+    /// </summary>
+    /// <param name="request">Messaging request for messages sent to API.</param>
+    /// <param name="logger">Represents a type used to perform logging.</param>
+    /// <exception cref="ArgumentNullException">Thrown when request is null.</exception>
+    protected BaseNwsRepository(
+        MessagingMessageRequest<CommonKeyValuePair<string, string>> request,
+        ILogger logger)
+        : base(logger)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        this.Request = request;
+    }
 
     /// <summary>
-    /// Gets or sets the message request.
+    /// Initializes a new instance of the <see cref="BaseNwsRepository"/> class.
     /// </summary>
-    public MessagingMessageRequest<CommonKeyValuePair<string, string>> Request { get; set; }
+    /// <param name="request">Messaging request for messages sent to API.</param>
+    /// <param name="loggerFactory">Represents a type used to configure the logging system and create instances of ILogger from the registered ILoggerProviders.</param>
+    /// <exception cref="ArgumentNullException">Thrown when request is null.</exception>
+    protected BaseNwsRepository(
+        MessagingMessageRequest<CommonKeyValuePair<string, string>> request,
+        ILoggerFactory loggerFactory)
+        : base(loggerFactory)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+        this.Request = request;
+    }
 
-    #endregion Public Properties
+    #endregion Protected Constructors
 
-    #region Public Methods
+    #region Protected Properties
+
+    /// <summary>
+    /// Gets the message request.
+    /// </summary>
+    protected MessagingMessageRequest<CommonKeyValuePair<string, string>> Request { get; private set; }
+
+    #endregion Protected Properties
+
+    #region Protected Methods
 
     /// <summary>
     /// Creates a GET HTTP request for the specified endpoint path.
     /// </summary>
-    /// <param name="endPointPath">API endpoint.</param>
+    /// <param name="endPointPath">API endpoint path (must be a valid absolute URI).</param>
     /// <returns>HTTP GET request for the National Weather Service API.</returns>
-    public NetHttpRequest CreateHttpGetRequest(string endPointPath)
+    /// <exception cref="ArgumentNullException">Thrown when endPointPath is null.</exception>
+    /// <exception cref="ArgumentException">Thrown when endPointPath is not a valid absolute URI.</exception>
+    protected NetHttpRequest CreateHttpGetRequest(string endPointPath)
     {
         ArgumentNullException.ThrowIfNull(endPointPath);
 
-        string appName = this.Request.Publisher.Identifier;
-
-        if (!string.IsNullOrEmpty(this.Request.Publisher.Name))
+        if (!Uri.IsWellFormedUriString(endPointPath, UriKind.Absolute))
         {
-            appName = this.Request.Publisher.Name;
+            throw new ArgumentException(
+                "Endpoint path must be a valid absolute URI.",
+                nameof(endPointPath));
+        }
+
+        // Get User-Agent from publisher (with fallback)
+        string appName = "NWS-SDK-Client";
+
+        if (!string.IsNullOrWhiteSpace(this.Request.Publisher.Identifier))
+        {
+            appName = this.Request.Publisher.Identifier;
+        }
+
+        if (!string.IsNullOrWhiteSpace(this.Request.Publisher.Name?.Key))
+        {
+            appName = this.Request.Publisher.Name.Key;
         }
 
         NetHttpRequest request = new NetHttpRequest
         {
             Method = HttpMethod.Get,
             HttpEndPoint = new Uri(endPointPath),
-            HttpHeaders = new List<NetHttpHeader>()
+            HttpHeaders = new List<NetHttpHeader>
             {
-                { new NetHttpHeader("User-Agent", appName) },
-                { new NetHttpHeader("Accept", "application/geo+json") },
+                new NetHttpHeader("User-Agent", appName),
+                new NetHttpHeader("Accept", "application/geo+json"),
             },
             EnableCompression = false,
         };
@@ -74,5 +126,5 @@ internal abstract class BaseNwsRepository
         return request;
     }
 
-    #endregion Public Methods
+    #endregion Protected Methods
 }

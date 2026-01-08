@@ -4,6 +4,8 @@
 
 namespace Roadbed;
 
+using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
@@ -41,7 +43,7 @@ public static class CommonLoggerExtension
              */
         }
 
-        return logger.BeginScope(new Dictionary<string, object> { { key, value } });
+        return logger.BeginScope(new[] { new KeyValuePair<string, object>(key, value) });
     }
 
     /// <summary>
@@ -50,9 +52,13 @@ public static class CommonLoggerExtension
     /// <param name="logger">Represents a type used to perform logging.</param>
     /// <param name="level">Defines logging severity levels.</param>
     /// <param name="message">Message to log.</param>
+    [SuppressMessage(
+        "Usage",
+        "SA1010:Opening Square Brackets Must Be Spaced Correctly",
+        Justification = "This is the preferred formatting for C# 12+.")]
     public static void LogWithCheck(this ILogger logger, LogLevel level, string message)
     {
-        logger.LogWithCheck(level, message, Array.Empty<object>());
+        logger.LogWithCheck(level, message, []);
     }
 
     /// <summary>
@@ -62,10 +68,13 @@ public static class CommonLoggerExtension
     /// <param name="level">Defines logging severity levels.</param>
     /// <param name="message">Message to log.</param>
     /// <param name="param">Message parameters.</param>
+    [SuppressMessage(
+        "Usage",
+        "CA2254:Template should be a static expression",
+        Justification = "This is a wrapper method that intentionally accepts dynamic log messages")]
     public static void LogWithCheck(this ILogger logger, LogLevel level, string message, params object[] param)
     {
-        if ((logger == null) ||
-            string.IsNullOrEmpty(message))
+        if (logger is null || string.IsNullOrEmpty(message))
         {
             return;
             /*

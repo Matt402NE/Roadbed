@@ -1,5 +1,7 @@
 ﻿namespace Roadbed.Sdk.NationalWeatherService.Repositories;
 
+using System;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
@@ -9,10 +11,10 @@ using Roadbed.Net;
 using Roadbed.Sdk.NationalWeatherService.Dtos;
 
 /// <summary>
-/// CRUD repository for NwsForecast entity.
+/// Repository for retrieving hourly weather forecasts from the National Weather Service.
 /// </summary>
-internal class NwsForecastHourlyRepository
-    : BaseNwsRepository, INwsForecastHourlyRepository<NwsForecastResponse, string>
+internal sealed class NwsForecastHourlyRepository
+    : BaseNwsRepository, INwsForecastHourlyRepository
 {
     #region Public Constructors
 
@@ -31,44 +33,79 @@ internal class NwsForecastHourlyRepository
 
     /// <inheritdoc />
     /// <remarks>
-    /// This will provide the grid forecast endpoints for three format options in these properties:
-    /// - forecast - forecast for 12h periods over the next seven days.
-    /// - forecastHourly - forecast for hourly periods over the next seven days.
-    /// - forecastGridData - raw forecast data over the next seven days.
+    /// Returns forecast for hourly periods over the next seven days.
+    /// For 12-hour period forecasts, use <see cref="INwsForecastDailyRepository"/>.
     /// </remarks>
-    public async Task<NwsForecastResponse> ListAsync(NwsForecastRequest request, CancellationToken cancellationToken)
+    public async Task<NwsForecastResponse> ReadAsync(
+        NwsForecastRequest request,
+        CancellationToken cancellationToken)
     {
         // URL syntax for API Endpoint:
         // https://api.weather.gov/gridpoints/{wfo}/{x},{y}/forecast/hourly
-        string endPoint = string.Join(
-                "/",
-                BaseApiPath,
-                "gridpoints",
-                request.WeatherForecastOfficeId,
-                string.Concat(request.GridCoordinateX, ',', request.GridCoordinateY),
-                "forecast",
-                "hourly");
+        string endpoint = string.Join(
+            "/",
+            BaseApiPath,
+            "gridpoints",
+            request.OfficeId,
+            string.Concat(request.GridCoordinateX, ',', request.GridCoordinateY),
+            "forecast",
+            "hourly");
+
+        this.LogDebug(
+            "Fetching hourly forecast from endpoint: {Endpoint}",
+            endpoint);
 
         // Create Request
-        NetHttpRequest apiRequest = this.CreateHttpGetRequest(endPoint);
+        NetHttpRequest apiRequest = this.CreateHttpGetRequest(endpoint);
 
         // Make HTTP request
         NetHttpResponse<string> response =
             await NetHttpClient.MakeRequestAsync<string>(apiRequest, cancellationToken);
 
-        // Verify Response
-        if (response.IsSuccessStatusCode)
+        // Handle failure
+        if (!response.IsSuccessStatusCode)
         {
-            NwsForecastResponse? result =
-                JsonConvert.DeserializeObject<NwsForecastResponse>(response.Data);
+            string errorMessage = $"Failed to retrieve hourly forecast from {endpoint}: " +
+                $"{response.HttpStatusCode} - {response.HttpStatusCodeDescription}";
 
-            if (result != null)
+            if (string.IsNullOrEmpty(response.HttpStatusCodeDescription))
             {
-                return result;
+                this.LogError(
+                    "API request failed for endpoint {Endpoint}. Status: {StatusCode}",
+                    endpoint,
+                    response.HttpStatusCode);
             }
+            else
+            {
+                this.LogError(
+                    "API request failed for endpoint {Endpoint}. Status: {StatusCode} - {StatusDescription}",
+                    endpoint,
+                    response.HttpStatusCode,
+                    response.HttpStatusCodeDescription);
+            }
+
+            throw new HttpRequestException(errorMessage);
         }
 
-        return default!;
+        // Deserialize JSON
+        NwsForecastResponse? result =
+            JsonConvert.DeserializeObject<NwsForecastResponse>(response.Data);
+
+        if (result == null)
+        {
+            this.LogError(
+                "Failed to deserialize hourly forecast response from endpoint {Endpoint}",
+                endpoint);
+
+            throw new InvalidOperationException(
+                $"Failed to deserialize forecast response from {endpoint}");
+        }
+
+        this.LogDebug(
+            "Successfully retrieved hourly forecast with {PeriodCount} periods",
+            result.Properties?.Periods?.Length ?? 0);
+
+        return result;
     }
 
     #endregion Public Methods

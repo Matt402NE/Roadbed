@@ -86,31 +86,29 @@ public class NetHttpClient
 
         try
         {
-            using (HttpRequestMessage requestMessage = CreateHttpRequestMessage(request))
+            // ✅ FIXED: Pass request, not a pre-created message
+            // The retry method will create a new HttpRequestMessage for each attempt
+            HttpResponseMessage message =
+                await this.MakeRequestWithBackoffRetryAsync(request, cancelToken);
+
+            // Add the Data
+            if (message.IsSuccessStatusCode &&
+                (message.StatusCode != HttpStatusCode.NotFound))
             {
-                // Make request with Retry Pattern.
-                HttpResponseMessage message =
-                    await this.MakeRequestWithBackoffRetryAsync(request, requestMessage, cancelToken);
+                // Grab the body of the response
+                string responseBody = await message.Content.ReadAsStringAsync(cancelToken);
 
-                // Add the Data
-                if (message.IsSuccessStatusCode &&
-                    (message.StatusCode != HttpStatusCode.NotFound))
-                {
-                    // Grab the body of the response
-                    string responseBody = await message.Content.ReadAsStringAsync(cancelToken);
-
-                    response = NetHttpResponse<T>.Success(
-                            (int)message.StatusCode,
-                            message.ReasonPhrase,
-                            (T)Convert.ChangeType(responseBody, typeof(T)));
-                }
-                else
-                {
-                    response = NetHttpResponse<T>.Failure(
-                            (int)message.StatusCode,
-                            message.ReasonPhrase,
-                            "Not a successful HTTP call. Status code indicates a failed HTTP Request.");
-                }
+                response = NetHttpResponse<T>.Success(
+                        (int)message.StatusCode,
+                        message.ReasonPhrase,
+                        (T)Convert.ChangeType(responseBody, typeof(T)));
+            }
+            else
+            {
+                response = NetHttpResponse<T>.Failure(
+                        (int)message.StatusCode,
+                        message.ReasonPhrase,
+                        "Not a successful HTTP call. Status code indicates a failed HTTP Request.");
             }
         }
         catch (HttpRequestException ex) when (ex.InnerException is SocketException)
@@ -148,6 +146,11 @@ public class NetHttpClient
     /// <param name="request"><see cref="NetHttpRequest"/> to use in the creation of the <see cref="HttpRequestMessage"/>.</param>
     /// <returns><see cref="HttpRequestMessage"/> based on the <see cref="NetHttpRequest"/>.</returns>
     /// <exception cref="ArgumentNullException">Request is null.</exception>
+    /// <remarks>
+    /// This method creates a NEW HttpRequestMessage instance each time it is called.
+    /// This is required because HttpRequestMessage can only be sent once.
+    /// The retry pattern calls this method for each retry attempt.
+    /// </remarks>
     private static HttpRequestMessage CreateHttpRequestMessage(NetHttpRequest request)
     {
         ArgumentNullException.ThrowIfNull(request);
@@ -232,55 +235,88 @@ public class NetHttpClient
     /// Implementation of the retry pattern with backoff strategy.
     /// </summary>
     /// <param name="request"><see cref="NetHttpRequest"/> to use in the creation of the <see cref="HttpClient"/>.</param>
-    /// <param name="message">Body of Http Request.</param>
     /// <param name="cancelToken">Token to cancel tasks.</param>
     /// <returns>API response.</returns>
+    /// <remarks>
+    /// ✅ FIXED: This method now creates a NEW HttpRequestMessage for each retry attempt.
+    /// HttpRequestMessage can only be sent once, so we must create a fresh instance
+    /// for each attempt in the retry loop.
+    /// </remarks>
     private async Task<HttpResponseMessage> MakeRequestWithBackoffRetryAsync(
         NetHttpRequest request,
-        HttpRequestMessage message,
         CancellationToken cancelToken)
     {
+        HttpResponseMessage? lastResponse = null;
+
         for (int attempt = 0; attempt <= request.RetryPattern.MaxAttempts; attempt++)
         {
-            try
+            // ✅ FIXED: Create a NEW HttpRequestMessage for THIS attempt
+            using (HttpRequestMessage message = CreateHttpRequestMessage(request))
             {
-                using (HttpClient client = this.CreateHttpClient(request))
+                try
                 {
-                    // Send request with timeout
-                    HttpResponseMessage response = await client.SendAsync(
-                        message,
-                        HttpCompletionOption.ResponseContentRead,
-                        cancelToken)
-                        .WaitAsync(
-                            TimeSpan.FromSeconds(request.TimeoutInSecondsPerAttempt),
-                            cancelToken);
+                    using (HttpClient client = this.CreateHttpClient(request))
+                    {
+                        // Send request with timeout
+                        HttpResponseMessage response = await client.SendAsync(
+                            message,
+                            HttpCompletionOption.ResponseContentRead,
+                            cancelToken)
+                            .WaitAsync(
+                                TimeSpan.FromSeconds(request.TimeoutInSecondsPerAttempt),
+                                cancelToken);
 
-                    // Determine if we want to try again
-                    if ((response.StatusCode == HttpStatusCode.ServiceUnavailable) ||
-                        (response.StatusCode == HttpStatusCode.RequestTimeout) ||
-                        (response.StatusCode == HttpStatusCode.GatewayTimeout))
+                        // Determine if we want to try again
+                        if ((response.StatusCode == HttpStatusCode.ServiceUnavailable) ||
+                            (response.StatusCode == HttpStatusCode.RequestTimeout) ||
+                            (response.StatusCode == HttpStatusCode.GatewayTimeout))
+                        {
+                            lastResponse = response;
+
+                            // Don't retry on last attempt
+                            if (attempt < request.RetryPattern.MaxAttempts)
+                            {
+                                await WaitAsync(request, attempt, cancelToken);
+                                continue;
+                            }
+
+                            // Last attempt with retriable status code, fall through to return below
+                            break;
+                        }
+
+                        // Success or non-retriable status code
+                        return response;
+                    }
+                }
+                catch (HttpRequestException)
+                {
+                    // Networking issue occurred - retry if attempts remain
+                    if (attempt < request.RetryPattern.MaxAttempts)
                     {
                         await WaitAsync(request, attempt, cancelToken);
                         continue;
                     }
 
-                    return response;
+                    // No more attempts, fall through to return BadRequest below
+                    break;
                 }
-            }
-            catch (HttpRequestException)
-            {
-                // Networking issue occurred
-                await WaitAsync(request, attempt, cancelToken);
-            }
-            catch (TimeoutException)
-            {
-                // Task timeout occurred
-                await WaitAsync(request, attempt, cancelToken);
-            }
+                catch (TimeoutException)
+                {
+                    // Task timeout occurred - retry if attempts remain
+                    if (attempt < request.RetryPattern.MaxAttempts)
+                    {
+                        await WaitAsync(request, attempt, cancelToken);
+                        continue;
+                    }
+
+                    // No more attempts, fall through to return BadRequest below
+                    break;
+                }
+            } // HttpRequestMessage is disposed here after each attempt
         }
 
-        // Retry pattern exhausted
-        return new HttpResponseMessage(HttpStatusCode.BadRequest)
+        // Retry pattern exhausted - return last response if available, otherwise BadRequest
+        return lastResponse ?? new HttpResponseMessage(HttpStatusCode.BadRequest)
         {
             Content = new StringContent("Unable to complete Http Request."),
         };

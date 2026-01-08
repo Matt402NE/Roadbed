@@ -2,6 +2,7 @@ namespace Roadbed.Test.Unit.Messaging;
 
 using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Roadbed.Common;
 using Roadbed.Messaging;
 
 /// <summary>
@@ -19,7 +20,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_AcceptsEmptyStringData()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TestPublisher", true));
         string typeCodename = "test.message.response";
         string identifier = "test-identifier-123";
         string data = string.Empty;
@@ -38,7 +39,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_AcceptsEmptyStringIdentifier()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TestPublisher", true));
         string typeCodename = "test.message.response";
         string identifier = string.Empty;
         string data = "Test response data";
@@ -57,7 +58,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_AcceptsEmptyStringTypeCodename()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TestPublisher", true));
         string typeCodename = string.Empty;
         string identifier = "test-identifier-123";
         string data = "Test response data";
@@ -76,7 +77,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_AcceptsNullData()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TestPublisher", true));
         string typeCodename = "test.message.response";
         string identifier = "test-identifier-123";
         string? data = null;
@@ -96,7 +97,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_AcceptsNullIdentifier()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         string? identifier = null;
         string data = "Test response data";
@@ -116,7 +117,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_AcceptsNullTypeCodename()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string? typeCodename = null;
         string identifier = "test-identifier-123";
         string data = "Test response data";
@@ -137,7 +138,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_AcceptsSpecialCharacters()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message-response_v1.0";
         string identifier = "test-id_123!@#";
         string data = "Data with special chars: !@#$%";
@@ -158,7 +159,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_AcceptsValidUlidIdentifier()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         string identifier = Ulid.NewUlid().ToString();
         string data = "Test response data";
@@ -178,7 +179,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_LeavesOriginalRequestIdentifierNull()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         string identifier = "test-identifier-123";
         string data = "Test response data";
@@ -197,7 +198,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_SetsAllProperties()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         string identifier = "test-identifier-123";
         string data = "Test response data";
@@ -219,7 +220,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_SetsCreatedOnToUtcNow()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         string identifier = "test-identifier-123";
         string data = "Test response data";
@@ -241,7 +242,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_SetsSourceCreatedOnToUtcNow()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         string identifier = "test-identifier-123";
         string data = "Test response data";
@@ -263,7 +264,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParameters_WorksWithComplexGenericType()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         string identifier = "test-identifier-123";
         var data = new ResponseData { Success = true, Message = "Operation successful", StatusCode = 200 };
@@ -288,7 +289,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParametersIncludingCreatedOn_LeavesOriginalRequestIdentifierNull()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         string identifier = "test-identifier-123";
         string data = "Test response data";
@@ -308,7 +309,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithAllParametersIncludingCreatedOn_PreservesTimezone()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         string identifier = "test-identifier-123";
         string data = "Test response data";
@@ -329,7 +330,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_GeneratesNonEmptyIdentifier()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response = new MessagingMessageResponse<string>(publisher);
@@ -345,7 +346,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_GeneratesNonNullIdentifier()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response = new MessagingMessageResponse<string>(publisher);
@@ -361,7 +362,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_GeneratesUniqueIdentifiers()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response1 = new MessagingMessageResponse<string>(publisher);
@@ -378,7 +379,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_GeneratesValidUlidIdentifier()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response = new MessagingMessageResponse<string>(publisher);
@@ -394,7 +395,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_LeavesDataNull()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response = new MessagingMessageResponse<string>(publisher);
@@ -410,7 +411,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_LeavesMessageTypeCodenameNull()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response = new MessagingMessageResponse<string>(publisher);
@@ -426,7 +427,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_LeavesOriginalRequestIdentifierNull()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response = new MessagingMessageResponse<string>(publisher);
@@ -442,7 +443,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_SetsCreatedOnToNonNull()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response = new MessagingMessageResponse<string>(publisher);
@@ -458,7 +459,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_SetsCreatedOnToUtcNow()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var beforeCreation = DateTimeOffset.UtcNow;
 
         // Act
@@ -477,7 +478,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_SetsPublisherProperty()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response = new MessagingMessageResponse<string>(publisher);
@@ -493,7 +494,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_SetsSourceCreatedOnToNonNull()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response = new MessagingMessageResponse<string>(publisher);
@@ -509,7 +510,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_SetsSourceCreatedOnToUtcNow()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var beforeCreation = DateTimeOffset.UtcNow;
 
         // Act
@@ -528,7 +529,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisher_WorksWithComplexGenericType()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
 
         // Act
         var response = new MessagingMessageResponse<ResponseData>(publisher);
@@ -546,7 +547,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisherAndTypeCodename_AcceptsCodenameWithSpecialCharacters()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message-response_v1";
 
         // Act
@@ -563,7 +564,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisherAndTypeCodename_AcceptsEmptyStringTypeCodename()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = string.Empty;
 
         // Act
@@ -581,7 +582,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisherAndTypeCodename_AcceptsNullTypeCodename()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string? typeCodename = null;
 
         // Act
@@ -599,7 +600,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisherAndTypeCodename_GeneratesUniqueIdentifiers()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
 
         // Act
@@ -617,7 +618,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisherAndTypeCodename_GeneratesValidUlidIdentifier()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
 
         // Act
@@ -634,7 +635,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisherAndTypeCodename_LeavesDataNull()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
 
         // Act
@@ -651,7 +652,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisherAndTypeCodename_LeavesOriginalRequestIdentifierNull()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
 
         // Act
@@ -668,7 +669,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisherAndTypeCodename_SetsBothProperties()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
 
         // Act
@@ -686,7 +687,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisherAndTypeCodename_SetsCreatedOnToUtcNow()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         var beforeCreation = DateTimeOffset.UtcNow;
 
@@ -706,7 +707,7 @@ public class MessagingMessageResponseTests
     public void Constructor_WithPublisherAndTypeCodename_SetsSourceCreatedOnToUtcNow()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         string typeCodename = "test.message.response";
         var beforeCreation = DateTimeOffset.UtcNow;
 
@@ -726,7 +727,7 @@ public class MessagingMessageResponseTests
     public void DataProperty_SetValue_UpdatesProperty()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var response = new MessagingMessageResponse<string>(publisher);
         string newData = "Updated response data";
 
@@ -744,7 +745,7 @@ public class MessagingMessageResponseTests
     public void MessageTypeCodenameProperty_SetValue_UpdatesProperty()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var response = new MessagingMessageResponse<string>(publisher);
         string newTypeCodename = "updated.message.type";
 
@@ -762,7 +763,7 @@ public class MessagingMessageResponseTests
     public void OriginalRequestIdentifierProperty_SetToEmptyString_AcceptsEmptyString()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var response = new MessagingMessageResponse<string>(publisher);
 
         // Act
@@ -779,7 +780,7 @@ public class MessagingMessageResponseTests
     public void OriginalRequestIdentifierProperty_SetToNull_AcceptsNull()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var response = new MessagingMessageResponse<string>(publisher);
         response.OriginalRequestIdentifier = "original-request-123";
 
@@ -797,7 +798,7 @@ public class MessagingMessageResponseTests
     public void OriginalRequestIdentifierProperty_SetToUlid_AcceptsUlid()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var response = new MessagingMessageResponse<string>(publisher);
         string originalRequestId = Ulid.NewUlid().ToString();
 
@@ -816,7 +817,7 @@ public class MessagingMessageResponseTests
     public void OriginalRequestIdentifierProperty_SetValue_UpdatesProperty()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var response = new MessagingMessageResponse<string>(publisher);
         string originalRequestId = "original-request-123";
 
@@ -834,7 +835,7 @@ public class MessagingMessageResponseTests
     public void OriginalRequestIdentifierProperty_SetWithSpecialCharacters_AcceptsValue()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var response = new MessagingMessageResponse<string>(publisher);
         string originalRequestId = "request-id_123!@#";
 
@@ -852,7 +853,7 @@ public class MessagingMessageResponseTests
     public void OriginalRequestIdentifierProperty_UpdateMultipleTimes_RetainsLatestValue()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var response = new MessagingMessageResponse<string>(publisher);
 
         // Act
@@ -865,32 +866,13 @@ public class MessagingMessageResponseTests
     }
 
     /// <summary>
-    /// Verifies that the Publisher property can be updated after construction.
-    /// </summary>
-    [TestMethod]
-    public void PublisherProperty_SetValue_UpdatesProperty()
-    {
-        // Arrange
-        var initialPublisher = new MessagingPublisher("InitialPublisher");
-        var response = new MessagingMessageResponse<string>(initialPublisher);
-        var newPublisher = new MessagingPublisher("NewPublisher");
-
-        // Act
-        response.Publisher = newPublisher;
-
-        // Assert
-        Assert.AreEqual(newPublisher, response.Publisher);
-        Assert.AreNotEqual(initialPublisher, response.Publisher);
-    }
-
-    /// <summary>
     /// Verifies that the SourceCreatedOn property can be updated after construction.
     /// </summary>
     [TestMethod]
     public void SourceCreatedOnProperty_SetValue_UpdatesProperty()
     {
         // Arrange
-        var publisher = new MessagingPublisher("TestPublisher");
+        var publisher = new MessagingPublisher(CommonBusinessKey.FromString("TESTPUBLISHER"));
         var response = new MessagingMessageResponse<string>(publisher);
         var newSourceCreatedOn = DateTimeOffset.UtcNow.AddDays(-1);
 

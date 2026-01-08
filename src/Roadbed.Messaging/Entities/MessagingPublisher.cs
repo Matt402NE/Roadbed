@@ -4,6 +4,8 @@
 
 namespace Roadbed.Messaging;
 
+using Roadbed.Common;
+
 /// <summary>
 /// Entity for Message Publisher related operations.
 /// </summary>
@@ -26,7 +28,7 @@ public class MessagingPublisher
     /// Initializes a new instance of the <see cref="MessagingPublisher"/> class.
     /// </summary>
     /// <param name="name">Name of the publisher.</param>
-    public MessagingPublisher(string name)
+    public MessagingPublisher(CommonBusinessKey name)
     {
         this.Name = name;
         this.Identifier = Ulid.NewUlid().ToString();
@@ -37,7 +39,7 @@ public class MessagingPublisher
     /// </summary>
     /// <param name="name">Name of the publisher.</param>
     /// <param name="identifier">Unique identifier for the publisher.</param>
-    public MessagingPublisher(string name, string identifier)
+    public MessagingPublisher(CommonBusinessKey name, string identifier)
     {
         this.Name = name;
         this.Identifier = identifier;
@@ -55,7 +57,7 @@ public class MessagingPublisher
     /// <summary>
     /// Gets or sets the attribute key.
     /// </summary>
-    public string? Name { get; set; }
+    public CommonBusinessKey? Name { get; set; }
 
     #endregion Public Properties
 }
