@@ -23,6 +23,7 @@
   <ItemGroup>
     <Compile Remove="Net\Mocks\IntegrationObjectAttribute.cs" />
     <Compile Remove="Net\NetServiceTests.cs" />
+    <Compile Remove="Sdk.NationalWeatherService\NwsForecastTests.cs" />
   </ItemGroup>
 
   <ItemGroup>

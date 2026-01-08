@@ -7,7 +7,8 @@ using Roadbed.Sdk.NationalWeatherService.Repositories;
 /// <summary>
 /// Installer for National Weather Service SDK.
 /// </summary>
-public class InstallNationalWeatherService : IServiceCollectionInstaller
+public sealed class InstallNationalWeatherService
+    : IServiceCollectionInstaller
 {
     #region Public Methods
 
@@ -15,15 +16,18 @@ public class InstallNationalWeatherService : IServiceCollectionInstaller
     public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
     {
         // Add Internal Repositories
-        services.AddScoped<INwsLocationRepository<NwsLocationResponse, string>, NwsLocationRepository>();
-        services.AddScoped<INwsForecastDailyRepository<NwsForecastResponse, string>, NwsForecastDailyRepository>();
-        services.AddScoped<INwsForecastHourlyRepository<NwsForecastResponse, string>, NwsForecastHourlyRepository>();
+        services.AddScoped<INwsAdminDistrictRepository, NwsAdminDistrictRepository>();
+        services.AddScoped<INwsStationRepository, NwsStationRepository>();
+        services.AddScoped<INwsOfficeRepository, NwsOfficeRepository>();
+        services.AddScoped<INwsGridCoordinateRepository, NwsGridCoordinateRepository>();
+        services.AddScoped<INwsForecastDailyRepository, NwsForecastDailyRepository>();
+        services.AddScoped<INwsForecastHourlyRepository, NwsForecastHourlyRepository>();
 
-        // Build the service provider
-        IServiceProvider serviceProvider = services.BuildServiceProvider();
-
-        // Retain Serivce Collection in custom ServiceLocator
-        ServiceLocator.SetLocatorProvider(serviceProvider);
+        // Capture point-in-time snapshot in ServiceLocator. This allows the class library
+        // to be self-contained (as a NuGet package) without depending on the consuming application
+        // to do anything extra besides registering the middleware using one of the methods in
+        // the Roadbed.Common.ServiceCollectionExtensions class.
+        ServiceLocator.SetLocatorProvider(services.BuildServiceProvider());
     }
 
     #endregion Public Methods

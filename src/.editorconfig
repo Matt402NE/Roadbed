@@ -255,9 +255,13 @@ dotnet_diagnostic.IDE0090.severity = none
 dotnet_diagnostic.IDE0130.severity = none
 
 # Override StyleCop rules
+dotnet_diagnostic.SA1011.severity = none # Need to allow public string[]? Features { get; set; }
 dotnet_diagnostic.SA1124.severity = none
-dotnet_diagnostic.SA1633.severity = none
 dotnet_diagnostic.SA1201.severity = none # Temporary. Remove once StyleCop supports .NET 10 feature.
+dotnet_diagnostic.SA1309.severity = none # Use '_camelCase' (starts with an underscore) vs. parameters using 'camelCase'
+dotnet_diagnostic.SA1633.severity = none
+
+
 
 # Override SonarAnalyzer (SonarQube) rules
 dotnet_diagnostic.S3267.severity = none

@@ -11,18 +11,18 @@ using Roadbed.Net;
 using Roadbed.Sdk.NationalWeatherService.Dtos;
 
 /// <summary>
-/// Repository for retrieving daily weather forecasts from the National Weather Service.
+/// Repository for retrieving National Weather Service office information.
 /// </summary>
-internal sealed class NwsForecastDailyRepository
-    : BaseNwsRepository, INwsForecastDailyRepository
+internal sealed class NwsOfficeRepository
+    : BaseNwsRepository, INwsOfficeRepository
 {
     #region Public Constructors
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="NwsForecastDailyRepository"/> class.
+    /// Initializes a new instance of the <see cref="NwsOfficeRepository"/> class.
     /// </summary>
     /// <param name="request">Messaging request for messages sent to API.</param>
-    public NwsForecastDailyRepository(MessagingMessageRequest<CommonKeyValuePair<string, string>> request)
+    public NwsOfficeRepository(MessagingMessageRequest<CommonKeyValuePair<string, string>> request)
         : base(request)
     {
     }
@@ -32,27 +32,21 @@ internal sealed class NwsForecastDailyRepository
     #region Public Methods
 
     /// <inheritdoc />
-    /// <remarks>
-    /// Returns forecast for 12-hour periods over the next seven days.
-    /// For hourly forecasts, use <see cref="INwsForecastHourlyRepository"/>.
-    /// </remarks>
-    public async Task<NwsForecastResponse> ReadAsync(
-        NwsForecastRequest request,
+    public async Task<NwsOfficeResponse> ReadAsync(
+        string id,
         CancellationToken cancellationToken)
     {
         // URL syntax for API Endpoint:
-        // https://api.weather.gov/gridpoints/{wfo}/{x},{y}/forecast
+        // https://api.weather.gov/offices/{office_id}
         string endpoint = string.Join(
             "/",
             BaseApiPath,
-            "gridpoints",
-            request.OfficeId,
-            string.Concat(request.GridCoordinateX, ',', request.GridCoordinateY),
-            "forecast");
+            "offices",
+            id);
 
         this.LogDebug(
-            "Fetching daily forecast from endpoint: {Endpoint}",
-            endpoint);
+            "Fetching office information for: {OfficeId}",
+            id);
 
         // Create Request
         NetHttpRequest apiRequest = this.CreateHttpGetRequest(endpoint);
@@ -64,7 +58,7 @@ internal sealed class NwsForecastDailyRepository
         // Handle failure
         if (!response.IsSuccessStatusCode)
         {
-            string errorMessage = $"Failed to retrieve daily forecast from {endpoint}: " +
+            string errorMessage = $"Failed to retrieve office information from {endpoint}: " +
                 $"{response.HttpStatusCode} - {response.HttpStatusCodeDescription}";
 
             if (string.IsNullOrEmpty(response.HttpStatusCodeDescription))
@@ -87,22 +81,23 @@ internal sealed class NwsForecastDailyRepository
         }
 
         // Deserialize JSON
-        NwsForecastResponse? result =
-            JsonConvert.DeserializeObject<NwsForecastResponse>(response.Data);
+        NwsOfficeResponse? result =
+            JsonConvert.DeserializeObject<NwsOfficeResponse>(response.Data);
 
         if (result == null)
         {
             this.LogError(
-                "Failed to deserialize daily forecast response from endpoint {Endpoint}",
+                "Failed to deserialize office response from endpoint {Endpoint}",
                 endpoint);
 
             throw new InvalidOperationException(
-                $"Failed to deserialize forecast response from {endpoint}");
+                $"Failed to deserialize office response from {endpoint}");
         }
 
         this.LogDebug(
-            "Successfully retrieved daily forecast with {PeriodCount} periods",
-            result.Properties?.Periods?.Length ?? 0);
+            "Successfully retrieved office: {OfficeName} ({OfficeId})",
+            result.Name ?? "unknown",
+            id);
 
         return result;
     }
