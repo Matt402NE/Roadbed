@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 using CsvHelper;
 using CsvHelper.Configuration;
 
@@ -99,6 +100,29 @@ public class IoCsvFile<T>
     }
 
     /// <summary>
+    /// Asynchronously creates an instance of <see cref="IoCsvFile{T}"/> from a file.
+    /// </summary>
+    /// <param name="path">File path to the CSV file.</param>
+    /// <param name="dataMapper">Data mapper used to turn lines in the CSV into a <see cref="IList{T}"/>.</param>
+    /// <returns>Task that represents the asynchronous operation. The task result contains an instance of <see cref="IoCsvFile{T}"/>.</returns>
+    public static async Task<IoCsvFile<T>> FromFileAsync(string path, ICsvEntityMapper<T> dataMapper)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
+        ArgumentNullException.ThrowIfNull(dataMapper);
+
+        // Create Instance
+        IoCsvFile<T> file = new IoCsvFile<T>(
+            new IoFileInfo(path),
+            dataMapper);
+
+        // Read the File
+        await file.LoadDataRowsFromFileAsync();
+
+        // Return result
+        return file;
+    }
+
+    /// <summary>
     /// Creates an instance of <see cref="IoCsvFile{T}"/> from a string.
     /// </summary>
     /// <param name="content">CSV content as a string.</param>
@@ -114,6 +138,27 @@ public class IoCsvFile<T>
 
         // Read the File
         file.LoadDataRowsFromString(content);
+
+        // Return result
+        return file;
+    }
+
+    /// <summary>
+    /// Asynchronously creates an instance of <see cref="IoCsvFile{T}"/> from a string.
+    /// </summary>
+    /// <param name="content">CSV content as a string.</param>
+    /// <param name="dataMapper">Data mapper used to turn lines in the CSV into a <see cref="IList{T}"/>.</param>
+    /// <returns>Task that represents the asynchronous operation. The task result contains an instance of <see cref="IoCsvFile{T}"/>.</returns>
+    public static async Task<IoCsvFile<T>> FromStringAsync(string content, ICsvEntityMapper<T> dataMapper)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(content);
+        ArgumentNullException.ThrowIfNull(dataMapper);
+
+        // Create Instance
+        IoCsvFile<T> file = new IoCsvFile<T>(dataMapper);
+
+        // Read the File
+        await file.LoadDataRowsFromStringAsync(content);
 
         // Return result
         return file;
@@ -185,6 +230,38 @@ public class IoCsvFile<T>
     }
 
     /// <summary>
+    /// Asynchronously fills the <see cref="DataRows"/> property by reading the CSV content from the <see cref="IoFileInfo"/>.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous operation.</returns>
+    public async Task LoadDataRowsFromFileAsync()
+    {
+        // Validate "In" Properties
+        ValidateFileInfo(this.FileInfo!);
+        ValidateDataMapper(this.DataMapper);
+
+        // Reset "Out" Properties
+        this.DataRows = new List<T>();
+
+        // Fill Data Rows from File
+        await using FileStream stream = new FileStream(this.FileInfo!.FullPath!, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 4096, useAsync: true);
+        using TextReader textReader = new StreamReader(stream);
+        using CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
+
+        await csvReader.ReadAsync();
+        csvReader.ReadHeader();
+
+        while (await csvReader.ReadAsync())
+        {
+            var obj = this.DataMapper!.MapEntity(csvReader);
+
+            if (obj is not null)
+            {
+                this.DataRows.Add(obj);
+            }
+        }
+    }
+
+    /// <summary>
     /// Fills the <see cref="DataRows"/> property by reading the CSV content from a string.
     /// </summary>
     /// <param name="content">In-memory content to use to fill the <see cref="DataRows"/> property.</param>
@@ -215,6 +292,37 @@ public class IoCsvFile<T>
     }
 
     /// <summary>
+    /// Asynchronously fills the <see cref="DataRows"/> property by reading the CSV content from a string.
+    /// </summary>
+    /// <param name="content">In-memory content to use to fill the <see cref="DataRows"/> property.</param>
+    /// <returns>Task that represents the asynchronous operation.</returns>
+    public async Task LoadDataRowsFromStringAsync(string content)
+    {
+        // Validate "In" Properties
+        ValidateDataMapper(this.DataMapper);
+
+        // Reset "Out" Properties
+        this.DataRows = new List<T>();
+
+        // Fill Data Rows from Content
+        using TextReader textReader = new StringReader(content);
+        using CsvReader csvReader = new CsvReader(textReader, CultureInfo.InvariantCulture);
+
+        await csvReader.ReadAsync();
+        csvReader.ReadHeader();
+
+        while (await csvReader.ReadAsync())
+        {
+            var obj = this.DataMapper!.MapEntity(csvReader);
+
+            if (obj is not null)
+            {
+                this.DataRows.Add(obj);
+            }
+        }
+    }
+
+    /// <summary>
     /// Saves the file content to the file path specified in <see cref="IoFile(IoFileInfo)"/>.
     /// </summary>
     /// <returns>Path to the file that was saved.</returns>
@@ -231,6 +339,26 @@ public class IoCsvFile<T>
     public string Save(CsvConfiguration configuration)
     {
         return this.Save(
+            this.ExportDataRowsAsContentString(configuration));
+    }
+
+    /// <summary>
+    /// Asynchronously saves the file content to the file path specified in <see cref="IoFile(IoFileInfo)"/>.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous operation. The task result contains the path to the file that was saved.</returns>
+    public async Task<string> SaveAsync()
+    {
+        return await this.SaveAsync(GetDefaultConfiguration());
+    }
+
+    /// <summary>
+    /// Asynchronously saves the file content to the file path specified in <see cref="IoFile(IoFileInfo)"/>.
+    /// </summary>
+    /// <param name="configuration">CsvHelper configuration used in the export process.</param>
+    /// <returns>Task that represents the asynchronous operation. The task result contains the path to the file that was saved.</returns>
+    public async Task<string> SaveAsync(CsvConfiguration configuration)
+    {
+        return await this.SaveAsync(
             this.ExportDataRowsAsContentString(configuration));
     }
 

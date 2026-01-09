@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Threading.Tasks;
 using CsvHelper;
 using CsvHelper.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -471,7 +472,7 @@ public class IoCsvFileTests
 
     #endregion ExportDataRowsAsContentString Tests
 
-    #region FromFile Tests
+    #region FromFile Tests (Synchronous)
 
     /// <summary>
     /// Unit test to verify that FromFile throws exception when path is null.
@@ -693,9 +694,240 @@ public class IoCsvFileTests
         }
     }
 
-    #endregion FromFile Tests
+    #endregion FromFile Tests (Synchronous)
 
-    #region FromString Tests
+    #region FromFileAsync Tests (Asynchronous)
+
+    /// <summary>
+    /// Unit test to verify that FromFileAsync throws exception when path is null.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromFileAsync_NullPath_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string? nullPath = null;
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = await TestIoCsvFile.FromFileAsync(nullPath!, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromFileAsync should throw ArgumentException when path is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromFileAsync throws exception when path is empty.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromFileAsync_EmptyPath_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string emptyPath = string.Empty;
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = await TestIoCsvFile.FromFileAsync(emptyPath, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromFileAsync should throw ArgumentException when path is empty.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromFileAsync throws exception when path is whitespace.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromFileAsync_WhitespacePath_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string whitespacePath = "   ";
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = await TestIoCsvFile.FromFileAsync(whitespacePath, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromFileAsync should throw ArgumentException when path is whitespace.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromFileAsync throws exception when dataMapper is null.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromFileAsync_NullDataMapper_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
+        ICsvEntityMapper<TestDto>? nullDataMapper = null;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = await TestIoCsvFile.FromFileAsync(testPath, nullDataMapper!);
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromFileAsync should throw ArgumentNullException when dataMapper is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromFileAsync throws exception when file does not exist.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromFileAsync_FileDoesNotExist_ThrowsFileNotFoundException()
+    {
+        // Arrange (Given)
+        string nonExistentPath = Path.Combine(Path.GetTempPath(), $"nonexistent_{Guid.NewGuid()}.csv");
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = await TestIoCsvFile.FromFileAsync(nonExistentPath, dataMapper);
+        }
+        catch (FileNotFoundException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromFileAsync should throw FileNotFoundException when file does not exist.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromFileAsync reads valid CSV file correctly.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromFileAsync_ValidCsvFile_ReadsDataCorrectly()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
+        string csvContent = "Id,Name\n1,Test1\n2,Test2\n3,Test3";
+        var dataMapper = new TestCsvEntityMapper();
+
+        try
+        {
+            await File.WriteAllTextAsync(testPath, csvContent);
+
+            // Act (When)
+            var result = await TestIoCsvFile.FromFileAsync(testPath, dataMapper);
+
+            // Assert (Then)
+            Assert.IsNotNull(
+                result,
+                "FromFileAsync should return a valid instance.");
+            Assert.IsNotNull(
+                result.DataRows,
+                "DataRows should be populated.");
+            Assert.HasCount(
+                3,
+                result.DataRows,
+                "DataRows should contain all rows from CSV file.");
+            Assert.AreEqual(
+                "Test1",
+                result.DataRows[0].Name,
+                "First row should be read correctly.");
+            Assert.AreEqual(
+                2,
+                result.DataRows[1].Id,
+                "Second row should be read correctly.");
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromFileAsync sets FileInfo property correctly.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromFileAsync_ValidCsvFile_SetsFileInfoCorrectly()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
+        string csvContent = "Id,Name\n1,Test1";
+        var dataMapper = new TestCsvEntityMapper();
+
+        try
+        {
+            await File.WriteAllTextAsync(testPath, csvContent);
+
+            // Act (When)
+            var result = await TestIoCsvFile.FromFileAsync(testPath, dataMapper);
+
+            // Assert (Then)
+            Assert.IsNotNull(
+                result.FileInfo,
+                "FileInfo should be set.");
+            Assert.AreEqual(
+                testPath,
+                result.FileInfo.FullPath,
+                "FileInfo should have the correct path.");
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    #endregion FromFileAsync Tests (Asynchronous)
+
+    #region FromString Tests (Synchronous)
 
     /// <summary>
     /// Unit test to verify that FromString throws exception when content is null.
@@ -881,9 +1113,204 @@ public class IoCsvFileTests
             "Second row should be read correctly.");
     }
 
-    #endregion FromString Tests
+    #endregion FromString Tests (Synchronous)
 
-    #region LoadDataRowsFromFile Tests
+    #region FromStringAsync Tests (Asynchronous)
+
+    /// <summary>
+    /// Unit test to verify that FromStringAsync throws exception when content is null.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromStringAsync_NullContent_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string? nullContent = null;
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = await TestIoCsvFile.FromStringAsync(nullContent!, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromStringAsync should throw ArgumentException when content is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromStringAsync throws exception when content is empty.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromStringAsync_EmptyContent_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string emptyContent = string.Empty;
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = await TestIoCsvFile.FromStringAsync(emptyContent, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromStringAsync should throw ArgumentException when content is empty.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromStringAsync throws exception when content is whitespace.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromStringAsync_WhitespaceContent_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string whitespaceContent = "   ";
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = await TestIoCsvFile.FromStringAsync(whitespaceContent, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromStringAsync should throw ArgumentException when content is whitespace.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromStringAsync throws exception when dataMapper is null.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromStringAsync_NullDataMapper_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        string csvContent = "Id,Name\n1,Test1";
+        ICsvEntityMapper<TestDto>? nullDataMapper = null;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = await TestIoCsvFile.FromStringAsync(csvContent, nullDataMapper!);
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromStringAsync should throw ArgumentNullException when dataMapper is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromStringAsync handles content with only headers.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromStringAsync_HeaderOnlyContent_ReturnsEmptyDataRows()
+    {
+        // Arrange (Given)
+        string csvContent = "Id,Name";
+        var dataMapper = new TestCsvEntityMapper();
+
+        // Act (When)
+        var result = await TestIoCsvFile.FromStringAsync(csvContent, dataMapper);
+
+        // Assert (Then)
+        Assert.IsNotNull(
+            result,
+            "FromStringAsync should return a valid instance.");
+        Assert.HasCount(
+            0,
+            result.DataRows,
+            "DataRows should be empty when CSV has only headers.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromStringAsync does not set FileInfo property.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromStringAsync_ValidCsvContent_DoesNotSetFileInfo()
+    {
+        // Arrange (Given)
+        string csvContent = "Id,Name\n1,Test1";
+        var dataMapper = new TestCsvEntityMapper();
+
+        // Act (When)
+        var result = await TestIoCsvFile.FromStringAsync(csvContent, dataMapper);
+
+        // Assert (Then)
+        Assert.IsNull(
+            result.FileInfo,
+            "FileInfo should be null when created from string.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromStringAsync reads valid CSV content correctly.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task FromStringAsync_ValidCsvContent_ReadsDataCorrectly()
+    {
+        // Arrange (Given)
+        string csvContent = "Id,Name\n1,Test1\n2,Test2\n3,Test3";
+        var dataMapper = new TestCsvEntityMapper();
+
+        // Act (When)
+        var result = await TestIoCsvFile.FromStringAsync(csvContent, dataMapper);
+
+        // Assert (Then)
+        Assert.IsNotNull(
+            result,
+            "FromStringAsync should return a valid instance.");
+        Assert.IsNotNull(
+            result.DataRows,
+            "DataRows should be populated.");
+        Assert.HasCount(
+            3,
+            result.DataRows,
+            "DataRows should contain all rows from CSV content.");
+        Assert.AreEqual(
+            "Test1",
+            result.DataRows[0].Name,
+            "First row should be read correctly.");
+        Assert.AreEqual(
+            2,
+            result.DataRows[1].Id,
+            "Second row should be read correctly.");
+    }
+
+    #endregion FromStringAsync Tests (Asynchronous)
+
+    #region LoadDataRowsFromFile Tests (Synchronous)
 
     /// <summary>
     /// Unit test to verify that LoadDataRowsFromFile resets existing DataRows.
@@ -1051,9 +1478,183 @@ public class IoCsvFileTests
         }
     }
 
-    #endregion LoadDataRowsFromFile Tests
+    #endregion LoadDataRowsFromFile Tests (Synchronous)
 
-    #region LoadDataRowsFromString Tests
+    #region LoadDataRowsFromFileAsync Tests (Asynchronous)
+
+    /// <summary>
+    /// Unit test to verify that LoadDataRowsFromFileAsync resets existing DataRows.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task LoadDataRowsFromFileAsync_ExistingDataRows_ResetsDataRows()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
+        string csvContent = "Id,Name\n1,NewTest";
+
+        try
+        {
+            await File.WriteAllTextAsync(testPath, csvContent);
+
+            var instance = new TestIoCsvFile(new TestCsvEntityMapper());
+            instance.FileInfo = new IoFileInfo(testPath);
+            instance.DataRows = new List<TestDto>
+            {
+                new TestDto { Id = 99, Name = "OldTest" },
+            };
+
+            // Act (When)
+            await instance.LoadDataRowsFromFileAsync();
+
+            // Assert (Then)
+            Assert.HasCount(
+                1,
+                instance.DataRows,
+                "DataRows should contain only new data from file.");
+            Assert.AreEqual(
+                "NewTest",
+                instance.DataRows[0].Name,
+                "DataRows should contain new data, not old data.");
+            Assert.AreEqual(
+                1,
+                instance.DataRows[0].Id,
+                "DataRows should contain new data, not old data.");
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Unit test to verify that LoadDataRowsFromFileAsync throws ArgumentNullException when DataMapper is null.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task LoadDataRowsFromFileAsync_NullDataMapper_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
+        string csvContent = "Id,Name\n1,Test1";
+
+        try
+        {
+            await File.WriteAllTextAsync(testPath, csvContent);
+
+            var instance = new TestIoCsvFile(new TestCsvEntityMapper());
+            instance.FileInfo = new IoFileInfo(testPath);
+            instance.DataMapper = null;
+            ArgumentNullException? caughtException = null;
+
+            // Act (When)
+            try
+            {
+                await instance.LoadDataRowsFromFileAsync();
+            }
+            catch (ArgumentNullException ex)
+            {
+                caughtException = ex;
+            }
+
+            // Assert (Then)
+            Assert.IsNotNull(
+                caughtException,
+                "LoadDataRowsFromFileAsync should throw ArgumentNullException when DataMapper is null.");
+            Assert.AreEqual(
+                "dataMapper",
+                caughtException.ParamName,
+                "Exception should indicate dataMapper parameter name.");
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Unit test to verify that LoadDataRowsFromFileAsync throws ArgumentNullException when FileInfo is null.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task LoadDataRowsFromFileAsync_NullFileInfo_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        var instance = new TestIoCsvFile(new TestCsvEntityMapper());
+        instance.FileInfo = null;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            await instance.LoadDataRowsFromFileAsync();
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "LoadDataRowsFromFileAsync should throw ArgumentNullException when FileInfo is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that LoadDataRowsFromFileAsync reads file correctly.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task LoadDataRowsFromFileAsync_ValidFile_PopulatesDataRows()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
+        string csvContent = "Id,Name\n1,Test1\n2,Test2";
+
+        try
+        {
+            await File.WriteAllTextAsync(testPath, csvContent);
+
+            var instance = new TestIoCsvFile(new TestCsvEntityMapper());
+            instance.FileInfo = new IoFileInfo(testPath);
+
+            // Act (When)
+            await instance.LoadDataRowsFromFileAsync();
+
+            // Assert (Then)
+            Assert.IsNotNull(
+                instance.DataRows,
+                "DataRows should be populated.");
+            Assert.HasCount(
+                2,
+                instance.DataRows,
+                "DataRows should contain all rows from file.");
+            Assert.AreEqual(
+                "Test1",
+                instance.DataRows[0].Name,
+                "First row should be read correctly.");
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    #endregion LoadDataRowsFromFileAsync Tests (Asynchronous)
+
+    #region LoadDataRowsFromString Tests (Synchronous)
 
     /// <summary>
     /// Unit test to verify that LoadDataRowsFromString resets existing DataRows.
@@ -1142,9 +1743,103 @@ public class IoCsvFileTests
             "First row should be read correctly.");
     }
 
-    #endregion LoadDataRowsFromString Tests
+    #endregion LoadDataRowsFromString Tests (Synchronous)
 
-    #region Save Method Tests
+    #region LoadDataRowsFromStringAsync Tests (Asynchronous)
+
+    /// <summary>
+    /// Unit test to verify that LoadDataRowsFromStringAsync resets existing DataRows.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task LoadDataRowsFromStringAsync_ExistingDataRows_ResetsDataRows()
+    {
+        // Arrange (Given)
+        var instance = new TestIoCsvFile(new TestCsvEntityMapper());
+        string csvContent = "Id,Name\n1,NewTest";
+        instance.DataRows = new List<TestDto>
+        {
+            new TestDto { Id = 99, Name = "OldTest" },
+        };
+
+        // Act (When)
+        await instance.LoadDataRowsFromStringAsync(csvContent);
+
+        // Assert (Then)
+        Assert.HasCount(
+            1,
+            instance.DataRows,
+            "DataRows should contain only new data from content.");
+        Assert.AreEqual(
+            "NewTest",
+            instance.DataRows[0].Name,
+            "DataRows should contain new data, not old data.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that LoadDataRowsFromStringAsync throws ArgumentNullException when DataMapper is null.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task LoadDataRowsFromStringAsync_NullDataMapper_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        var instance = new TestIoCsvFile(new TestCsvEntityMapper());
+        instance.DataMapper = null;
+        string csvContent = "Id,Name\n1,Test1";
+        ArgumentNullException? caughtException = null;
+
+        // Act (When)
+        try
+        {
+            await instance.LoadDataRowsFromStringAsync(csvContent);
+        }
+        catch (ArgumentNullException ex)
+        {
+            caughtException = ex;
+        }
+
+        // Assert (Then)
+        Assert.IsNotNull(
+            caughtException,
+            "LoadDataRowsFromStringAsync should throw ArgumentNullException when DataMapper is null.");
+        Assert.AreEqual(
+            "dataMapper",
+            caughtException.ParamName,
+            "Exception should indicate dataMapper parameter name.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that LoadDataRowsFromStringAsync reads content correctly.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task LoadDataRowsFromStringAsync_ValidContent_PopulatesDataRows()
+    {
+        // Arrange (Given)
+        var instance = new TestIoCsvFile(new TestCsvEntityMapper());
+        string csvContent = "Id,Name\n1,Test1\n2,Test2";
+
+        // Act (When)
+        await instance.LoadDataRowsFromStringAsync(csvContent);
+
+        // Assert (Then)
+        Assert.IsNotNull(
+            instance.DataRows,
+            "DataRows should be populated.");
+        Assert.HasCount(
+            2,
+            instance.DataRows,
+            "DataRows should contain all rows from content.");
+        Assert.AreEqual(
+            "Test1",
+            instance.DataRows[0].Name,
+            "First row should be read correctly.");
+    }
+
+    #endregion LoadDataRowsFromStringAsync Tests (Asynchronous)
+
+    #region Save Method Tests (Synchronous)
 
     /// <summary>
     /// Unit test to verify that Save method returns file path.
@@ -1182,9 +1877,96 @@ public class IoCsvFileTests
         }
     }
 
-    #endregion Save Method Tests
+    #endregion Save Method Tests (Synchronous)
 
-    #region Integration Tests
+    #region SaveAsync Method Tests (Asynchronous)
+
+    /// <summary>
+    /// Unit test to verify that SaveAsync method returns file path.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task SaveAsync_ValidData_ReturnsFilePath()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
+        var instance = new TestIoCsvFile(new TestCsvEntityMapper());
+        instance.FileInfo = new IoFileInfo(testPath);
+        instance.DataRows = new List<TestDto>
+        {
+            new TestDto { Id = 1, Name = "Test1" },
+        };
+
+        try
+        {
+            // Act (When)
+            string result = await instance.SaveAsync();
+
+            // Assert (Then)
+            Assert.AreEqual(
+                testPath,
+                result,
+                "SaveAsync should return the file path that was saved.");
+            Assert.IsTrue(
+                File.Exists(testPath),
+                "File should exist after SaveAsync is called.");
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Unit test to verify that SaveAsync method writes file correctly.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task SaveAsync_ValidData_WritesFileCorrectly()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
+        var instance = new TestIoCsvFile(new TestCsvEntityMapper());
+        instance.FileInfo = new IoFileInfo(testPath);
+        instance.DataRows = new List<TestDto>
+        {
+            new TestDto { Id = 1, Name = "Test1" },
+            new TestDto { Id = 2, Name = "Test2" },
+        };
+
+        try
+        {
+            // Act (When)
+            await instance.SaveAsync();
+            string fileContent = await File.ReadAllTextAsync(testPath);
+
+            // Assert (Then)
+            StringAssert.Contains(
+                fileContent,
+                "Test1",
+                "File should contain data from first row.");
+            StringAssert.Contains(
+                fileContent,
+                "Test2",
+                "File should contain data from second row.");
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    #endregion SaveAsync Method Tests (Asynchronous)
+
+    #region Integration Tests (Synchronous)
 
     /// <summary>
     /// Unit test to verify that data can be round-tripped through string operations.
@@ -1227,7 +2009,108 @@ public class IoCsvFileTests
         }
     }
 
-    #endregion Integration Tests
+    #endregion Integration Tests (Synchronous)
+
+    #region Integration Tests (Asynchronous)
+
+    /// <summary>
+    /// Unit test to verify that data can be round-tripped through async string operations.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task Integration_ExportAndLoadStringAsync_PreservesData()
+    {
+        // Arrange (Given)
+        var originalData = new List<TestDto>
+        {
+            new TestDto { Id = 1, Name = "Test1" },
+            new TestDto { Id = 2, Name = "Test2" },
+        };
+
+        var exportInstance = new TestIoCsvFile(new TestCsvEntityMapper());
+        exportInstance.DataRows = originalData;
+
+        // Export data
+        string csvContent = exportInstance.ExportDataRowsAsContentString();
+
+        // Act (When) - Load from string asynchronously
+        var loadInstance = await TestIoCsvFile.FromStringAsync(csvContent, new TestCsvEntityMapper());
+
+        // Assert (Then)
+        Assert.HasCount(
+            originalData.Count,
+            loadInstance.DataRows,
+            "Loaded data should have same count as exported data.");
+
+        for (int i = 0; i < originalData.Count; i++)
+        {
+            Assert.AreEqual(
+                originalData[i].Id,
+                loadInstance.DataRows[i].Id,
+                $"Id of row {i} should match.");
+            Assert.AreEqual(
+                originalData[i].Name,
+                loadInstance.DataRows[i].Name,
+                $"Name of row {i} should match.");
+        }
+    }
+
+    /// <summary>
+    /// Unit test to verify that data can be round-tripped through async file operations.
+    /// </summary>
+    /// <returns>Task that represents the asynchronous test operation.</returns>
+    [TestMethod]
+    public async Task Integration_SaveAndLoadAsync_PreservesData()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
+        var originalData = new List<TestDto>
+        {
+            new TestDto { Id = 1, Name = "Test1" },
+            new TestDto { Id = 2, Name = "Test2" },
+            new TestDto { Id = 3, Name = "Test3" },
+        };
+
+        try
+        {
+            // Save data asynchronously
+            var saveInstance = new TestIoCsvFile(new TestCsvEntityMapper());
+            saveInstance.FileInfo = new IoFileInfo(testPath);
+            saveInstance.DataRows = originalData;
+            await saveInstance.SaveAsync();
+
+            // Act (When) - Load data asynchronously
+            var loadInstance = await TestIoCsvFile.FromFileAsync(testPath, new TestCsvEntityMapper());
+
+            // Assert (Then)
+            Assert.HasCount(
+                originalData.Count,
+                loadInstance.DataRows,
+                "Loaded data should have same count as saved data.");
+
+            for (int i = 0; i < originalData.Count; i++)
+            {
+                Assert.AreEqual(
+                    originalData[i].Id,
+                    loadInstance.DataRows[i].Id,
+                    $"Id of row {i} should match.");
+                Assert.AreEqual(
+                    originalData[i].Name,
+                    loadInstance.DataRows[i].Name,
+                    $"Name of row {i} should match.");
+            }
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    #endregion Integration Tests (Asynchronous)
 
     #endregion Public Methods
 
@@ -1301,6 +2184,20 @@ public class IoCsvFileTests
             return file;
         }
 
+        public static new async Task<TestIoCsvFile> FromFileAsync(string path, ICsvEntityMapper<TestDto> dataMapper)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(path);
+            ArgumentNullException.ThrowIfNull(dataMapper);
+
+            TestIoCsvFile file = new TestIoCsvFile(
+                new IoFileInfo(path),
+                dataMapper);
+
+            await file.LoadDataRowsFromFileAsync();
+
+            return file;
+        }
+
         public static new TestIoCsvFile FromString(string content, ICsvEntityMapper<TestDto> dataMapper)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(content);
@@ -1309,6 +2206,18 @@ public class IoCsvFileTests
             TestIoCsvFile file = new TestIoCsvFile(dataMapper);
 
             file.LoadDataRowsFromString(content);
+
+            return file;
+        }
+
+        public static new async Task<TestIoCsvFile> FromStringAsync(string content, ICsvEntityMapper<TestDto> dataMapper)
+        {
+            ArgumentException.ThrowIfNullOrWhiteSpace(content);
+            ArgumentNullException.ThrowIfNull(dataMapper);
+
+            TestIoCsvFile file = new TestIoCsvFile(dataMapper);
+
+            await file.LoadDataRowsFromStringAsync(content);
 
             return file;
         }
