@@ -2,8 +2,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using CsvHelper;
+using CsvHelper.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Roadbed.IO;
 
@@ -14,6 +16,8 @@ using Roadbed.IO;
 public class IoCsvFileTests
 {
     #region Public Methods
+
+    #region Constructor Tests
 
     /// <summary>
     /// Unit test to verify that the constructor with DataMapper initializes properties correctly.
@@ -34,13 +38,40 @@ public class IoCsvFileTests
         Assert.IsNotNull(
             instance.DataRows,
             "DataRows should be initialized to empty list.");
-        Assert.IsEmpty(
+        Assert.HasCount(
+            0,
             instance.DataRows,
             "DataRows should be empty after construction.");
         Assert.AreSame(
             dataMapper,
             instance.DataMapper,
             "DataMapper should reference the same object that was passed to constructor.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that the constructor with null DataMapper throws ArgumentNullException.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WithNullDataMapper_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        ICsvEntityMapper<TestDto>? nullDataMapper = null;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var instance = new TestIoCsvFile(nullDataMapper!);
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "Constructor should throw ArgumentNullException when DataMapper is null.");
     }
 
     /// <summary>
@@ -67,13 +98,41 @@ public class IoCsvFileTests
         Assert.IsNotNull(
             instance.DataRows,
             "DataRows should be initialized to empty list.");
-        Assert.IsEmpty(
+        Assert.HasCount(
+            0,
             instance.DataRows,
             "DataRows should be empty after construction.");
         Assert.AreSame(
             dataMapper,
             instance.DataMapper,
             "DataMapper should reference the same object that was passed to constructor.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that the constructor with null DataMapper throws ArgumentNullException.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WithFileInfoAndNullDataMapper_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        var fileInfo = new IoFileInfo(@"C:\TestFolder\TestFile.csv");
+        ICsvEntityMapper<TestDto>? nullDataMapper = null;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var instance = new TestIoCsvFile(fileInfo, nullDataMapper!);
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "Constructor should throw ArgumentNullException when DataMapper is null.");
     }
 
     /// <summary>
@@ -132,9 +191,9 @@ public class IoCsvFileTests
             "fileInfo",
             caughtException.ParamName,
             "Exception should indicate fileInfo parameter name.");
-        Assert.Contains(
-            "File extension isn't 'CSV'",
+        StringAssert.Contains(
             caughtException.Message,
+            "File extension isn't 'CSV'",
             "Exception message should indicate incorrect file extension.");
     }
 
@@ -227,6 +286,10 @@ public class IoCsvFileTests
             "Constructor should accept uppercase CSV extension.");
     }
 
+    #endregion Constructor Tests
+
+    #region Property Tests
+
     /// <summary>
     /// Unit test to verify that DataMapper property can be set to null.
     /// </summary>
@@ -293,8 +356,12 @@ public class IoCsvFileTests
             "DataRows should contain the expected number of items.");
     }
 
+    #endregion Property Tests
+
+    #region ExportDataRowsAsContentString Tests
+
     /// <summary>
-    /// Unit test to verify that ExportDataRowsAsContentString returns empty string when DataRows is empty.
+    /// Unit test to verify that ExportDataRowsAsContentString returns header when DataRows is empty.
     /// </summary>
     [TestMethod]
     public void ExportDataRowsAsContentString_EmptyDataRows_ReturnsHeaderOnly()
@@ -310,13 +377,13 @@ public class IoCsvFileTests
         Assert.IsFalse(
             string.IsNullOrEmpty(result),
             "ExportDataRowsAsContentString should return header even with empty DataRows.");
-        Assert.Contains(
+        StringAssert.Contains(
+            result,
             "Id",
-            result,
             "Export should contain header for Id.");
-        Assert.Contains(
-            "Name",
+        StringAssert.Contains(
             result,
+            "Name",
             "Export should contain header for Name.");
     }
 
@@ -384,22 +451,134 @@ public class IoCsvFileTests
         Assert.IsFalse(
             string.IsNullOrEmpty(result),
             "ExportDataRowsAsContentString should return non-empty string.");
-        Assert.Contains(
+        StringAssert.Contains(
+            result,
             "Id",
-            result,
             "Export should contain header for Id.");
-        Assert.Contains(
+        StringAssert.Contains(
+            result,
             "Name",
-            result,
             "Export should contain header for Name.");
-        Assert.Contains(
+        StringAssert.Contains(
+            result,
             "Test1",
-            result,
             "Export should contain data from first row.");
-        Assert.Contains(
-            "Test2",
+        StringAssert.Contains(
             result,
+            "Test2",
             "Export should contain data from second row.");
+    }
+
+    #endregion ExportDataRowsAsContentString Tests
+
+    #region FromFile Tests
+
+    /// <summary>
+    /// Unit test to verify that FromFile throws exception when path is null.
+    /// </summary>
+    [TestMethod]
+    public void FromFile_NullPath_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string? nullPath = null;
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = TestIoCsvFile.FromFile(nullPath!, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromFile should throw ArgumentException when path is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromFile throws exception when path is empty.
+    /// </summary>
+    [TestMethod]
+    public void FromFile_EmptyPath_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string emptyPath = string.Empty;
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = TestIoCsvFile.FromFile(emptyPath, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromFile should throw ArgumentException when path is empty.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromFile throws exception when path is whitespace.
+    /// </summary>
+    [TestMethod]
+    public void FromFile_WhitespacePath_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string whitespacePath = "   ";
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = TestIoCsvFile.FromFile(whitespacePath, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromFile should throw ArgumentException when path is whitespace.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromFile throws exception when dataMapper is null.
+    /// </summary>
+    [TestMethod]
+    public void FromFile_NullDataMapper_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
+        ICsvEntityMapper<TestDto>? nullDataMapper = null;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = TestIoCsvFile.FromFile(testPath, nullDataMapper!);
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromFile should throw ArgumentNullException when dataMapper is null.");
     }
 
     /// <summary>
@@ -514,11 +693,123 @@ public class IoCsvFileTests
         }
     }
 
+    #endregion FromFile Tests
+
+    #region FromString Tests
+
     /// <summary>
-    /// Unit test to verify that FromString handles empty content.
+    /// Unit test to verify that FromString throws exception when content is null.
     /// </summary>
     [TestMethod]
-    public void FromString_EmptyContent_ReturnsEmptyDataRows()
+    public void FromString_NullContent_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string? nullContent = null;
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = TestIoCsvFile.FromString(nullContent!, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromString should throw ArgumentException when content is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromString throws exception when content is empty.
+    /// </summary>
+    [TestMethod]
+    public void FromString_EmptyContent_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string emptyContent = string.Empty;
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = TestIoCsvFile.FromString(emptyContent, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromString should throw ArgumentException when content is empty.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromString throws exception when content is whitespace.
+    /// </summary>
+    [TestMethod]
+    public void FromString_WhitespaceContent_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string whitespaceContent = "   ";
+        var dataMapper = new TestCsvEntityMapper();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = TestIoCsvFile.FromString(whitespaceContent, dataMapper);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromString should throw ArgumentException when content is whitespace.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromString throws exception when dataMapper is null.
+    /// </summary>
+    [TestMethod]
+    public void FromString_NullDataMapper_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        string csvContent = "Id,Name\n1,Test1";
+        ICsvEntityMapper<TestDto>? nullDataMapper = null;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var result = TestIoCsvFile.FromString(csvContent, nullDataMapper!);
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "FromString should throw ArgumentNullException when dataMapper is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that FromString handles content with only headers.
+    /// </summary>
+    [TestMethod]
+    public void FromString_HeaderOnlyContent_ReturnsEmptyDataRows()
     {
         // Arrange (Given)
         string csvContent = "Id,Name";
@@ -531,7 +822,8 @@ public class IoCsvFileTests
         Assert.IsNotNull(
             result,
             "FromString should return a valid instance.");
-        Assert.IsEmpty(
+        Assert.HasCount(
+            0,
             result.DataRows,
             "DataRows should be empty when CSV has only headers.");
     }
@@ -589,100 +881,9 @@ public class IoCsvFileTests
             "Second row should be read correctly.");
     }
 
-    /// <summary>
-    /// Unit test to verify that data can be round-tripped through string operations.
-    /// </summary>
-    [TestMethod]
-    public void Integration_ExportAndLoadString_PreservesData()
-    {
-        // Arrange (Given)
-        var originalData = new List<TestDto>
-        {
-            new TestDto { Id = 1, Name = "Test1" },
-            new TestDto { Id = 2, Name = "Test2" },
-        };
+    #endregion FromString Tests
 
-        var exportInstance = new TestIoCsvFile(new TestCsvEntityMapper());
-        exportInstance.DataRows = originalData;
-
-        // Export data
-        string csvContent = exportInstance.ExportDataRowsAsContentString();
-
-        // Act (When) - Load from string
-        var loadInstance = TestIoCsvFile.FromString(csvContent, new TestCsvEntityMapper());
-
-        // Assert (Then)
-        Assert.HasCount(
-            originalData.Count,
-            loadInstance.DataRows,
-            "Loaded data should have same count as exported data.");
-
-        for (int i = 0; i < originalData.Count; i++)
-        {
-            Assert.AreEqual(
-                originalData[i].Id,
-                loadInstance.DataRows[i].Id,
-                $"Id of row {i} should match.");
-            Assert.AreEqual(
-                originalData[i].Name,
-                loadInstance.DataRows[i].Name,
-                $"Name of row {i} should match.");
-        }
-    }
-
-    /// <summary>
-    /// Unit test to verify that data can be round-tripped through file operations.
-    /// </summary>
-    [TestMethod]
-    public void Integration_SaveAndLoad_PreservesData()
-    {
-        // Arrange (Given)
-        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
-        var originalData = new List<TestDto>
-        {
-            new TestDto { Id = 1, Name = "Test1" },
-            new TestDto { Id = 2, Name = "Test2" },
-            new TestDto { Id = 3, Name = "Test3" },
-        };
-
-        try
-        {
-            // Save data
-            var saveInstance = new TestIoCsvFile(new TestCsvEntityMapper());
-            saveInstance.FileInfo = new IoFileInfo(testPath);
-            saveInstance.DataRows = originalData;
-            saveInstance.Save();
-
-            // Act (When) - Load data
-            var loadInstance = TestIoCsvFile.FromFile(testPath, new TestCsvEntityMapper());
-
-            // Assert (Then)
-            Assert.HasCount(
-                originalData.Count,
-                loadInstance.DataRows,
-                "Loaded data should have same count as saved data.");
-
-            for (int i = 0; i < originalData.Count; i++)
-            {
-                Assert.AreEqual(
-                    originalData[i].Id,
-                    loadInstance.DataRows[i].Id,
-                    $"Id of row {i} should match.");
-                Assert.AreEqual(
-                    originalData[i].Name,
-                    loadInstance.DataRows[i].Name,
-                    $"Name of row {i} should match.");
-            }
-        }
-        finally
-        {
-            // Cleanup
-            if (File.Exists(testPath))
-            {
-                File.Delete(testPath);
-            }
-        }
-    }
+    #region LoadDataRowsFromFile Tests
 
     /// <summary>
     /// Unit test to verify that LoadDataRowsFromFile resets existing DataRows.
@@ -850,6 +1051,10 @@ public class IoCsvFileTests
         }
     }
 
+    #endregion LoadDataRowsFromFile Tests
+
+    #region LoadDataRowsFromString Tests
+
     /// <summary>
     /// Unit test to verify that LoadDataRowsFromString resets existing DataRows.
     /// </summary>
@@ -937,55 +1142,9 @@ public class IoCsvFileTests
             "First row should be read correctly.");
     }
 
-    /// <summary>
-    /// Unit test to verify that Save method with default configuration writes file correctly.
-    /// </summary>
-    [TestMethod]
-    public void Save_DefaultConfiguration_WritesFileCorrectly()
-    {
-        // Arrange (Given)
-        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.csv");
-        var instance = new TestIoCsvFile(new TestCsvEntityMapper());
-        instance.FileInfo = new IoFileInfo(testPath);
-        instance.DataRows = new List<TestDto>
-        {
-            new TestDto { Id = 1, Name = "Test1" },
-            new TestDto { Id = 2, Name = "Test2" },
-        };
+    #endregion LoadDataRowsFromString Tests
 
-        try
-        {
-            // Act (When)
-            string result = instance.Save();
-
-            // Assert (Then)
-            Assert.AreEqual(
-                testPath,
-                result,
-                "Save should return the file path.");
-            Assert.IsTrue(
-                File.Exists(testPath),
-                "File should exist after Save is called.");
-
-            string fileContent = File.ReadAllText(testPath);
-            Assert.Contains(
-                "Test1",
-                fileContent,
-                "File should contain data from first row.");
-            Assert.Contains(
-                "Test2",
-                fileContent,
-                "File should contain data from second row.");
-        }
-        finally
-        {
-            // Cleanup
-            if (File.Exists(testPath))
-            {
-                File.Delete(testPath);
-            }
-        }
-    }
+    #region Save Method Tests
 
     /// <summary>
     /// Unit test to verify that Save method returns file path.
@@ -1022,6 +1181,53 @@ public class IoCsvFileTests
             }
         }
     }
+
+    #endregion Save Method Tests
+
+    #region Integration Tests
+
+    /// <summary>
+    /// Unit test to verify that data can be round-tripped through string operations.
+    /// </summary>
+    [TestMethod]
+    public void Integration_ExportAndLoadString_PreservesData()
+    {
+        // Arrange (Given)
+        var originalData = new List<TestDto>
+        {
+            new TestDto { Id = 1, Name = "Test1" },
+            new TestDto { Id = 2, Name = "Test2" },
+        };
+
+        var exportInstance = new TestIoCsvFile(new TestCsvEntityMapper());
+        exportInstance.DataRows = originalData;
+
+        // Export data
+        string csvContent = exportInstance.ExportDataRowsAsContentString();
+
+        // Act (When) - Load from string
+        var loadInstance = TestIoCsvFile.FromString(csvContent, new TestCsvEntityMapper());
+
+        // Assert (Then)
+        Assert.HasCount(
+            originalData.Count,
+            loadInstance.DataRows,
+            "Loaded data should have same count as exported data.");
+
+        for (int i = 0; i < originalData.Count; i++)
+        {
+            Assert.AreEqual(
+                originalData[i].Id,
+                loadInstance.DataRows[i].Id,
+                $"Id of row {i} should match.");
+            Assert.AreEqual(
+                originalData[i].Name,
+                loadInstance.DataRows[i].Name,
+                $"Name of row {i} should match.");
+        }
+    }
+
+    #endregion Integration Tests
 
     #endregion Public Methods
 
@@ -1083,6 +1289,9 @@ public class IoCsvFileTests
 
         public static new TestIoCsvFile FromFile(string path, ICsvEntityMapper<TestDto> dataMapper)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(path);
+            ArgumentNullException.ThrowIfNull(dataMapper);
+
             TestIoCsvFile file = new TestIoCsvFile(
                 new IoFileInfo(path),
                 dataMapper);
@@ -1094,6 +1303,9 @@ public class IoCsvFileTests
 
         public static new TestIoCsvFile FromString(string content, ICsvEntityMapper<TestDto> dataMapper)
         {
+            ArgumentException.ThrowIfNullOrWhiteSpace(content);
+            ArgumentNullException.ThrowIfNull(dataMapper);
+
             TestIoCsvFile file = new TestIoCsvFile(dataMapper);
 
             file.LoadDataRowsFromString(content);

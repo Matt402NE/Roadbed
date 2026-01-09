@@ -19,6 +19,12 @@
     <TreatWarningsAsErrors>True</TreatWarningsAsErrors>
   </PropertyGroup>
 
+	<ItemGroup>
+		<InternalsVisibleTo Include="Roadbed.Test.Unit" />
+		<InternalsVisibleTo Include="Roadbed.Test.Integration" />
+		<InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	</ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="CsvHelper" Version="33.1.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0">

@@ -4,16 +4,26 @@
 
 namespace Roadbed.IO;
 
+using System;
 using System.IO;
 
 /// <summary>
 /// System File Data Transfer Object (DTO).
 /// </summary>
 /// <remarks>
-/// This is a simplified version of <see cref="FileInfo"/> for data transfer purposes.
+/// This is a simplified version of <see cref="System.IO.FileInfo"/> for data transfer purposes.
 /// </remarks>
 public class IoFileInfo
 {
+    #region Private Fields
+
+    /// <summary>
+    /// Container for the public property FileInfo.
+    /// </summary>
+    private FileInfo? _fileInfo;
+
+    #endregion Private Fields
+
     #region Public Constructors
 
     /// <summary>
@@ -29,6 +39,7 @@ public class IoFileInfo
     /// <param name="path">Full Path of the file.</param>
     public IoFileInfo(string path)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(path);
         this.FullPath = path;
     }
 
@@ -43,23 +54,22 @@ public class IoFileInfo
     {
         get
         {
-            if (string.IsNullOrEmpty(this.FullPath) ||
-                (this.FileInfo == null))
+            if (string.IsNullOrWhiteSpace(this.FullPath) || this._fileInfo is null)
             {
                 return null;
             }
 
-            return this.FileInfo.Extension;
+            return this._fileInfo.Extension;
         }
     }
 
     /// <summary>
-    /// Gets the full version of <see cref="FileInfo"/>.
+    /// Gets the full version of <see cref="System.IO.FileInfo"/>.
     /// </summary>
     public FileInfo? FileInfo
     {
-        get;
-        internal set;
+        get => this._fileInfo;
+        internal set => this._fileInfo = value;
     }
 
     /// <summary>
@@ -67,20 +77,16 @@ public class IoFileInfo
     /// </summary>
     public string? FullPath
     {
-        get
-        {
-            return this.FileInfo?.FullName;
-        }
-
+        get => this._fileInfo?.FullName;
         set
         {
-            if (string.IsNullOrEmpty(value))
+            if (string.IsNullOrWhiteSpace(value))
             {
-                this.FileInfo = null;
+                this._fileInfo = null;
             }
             else
             {
-                this.FileInfo = new FileInfo(value);
+                this._fileInfo = new FileInfo(value);
             }
         }
     }
