@@ -1,8 +1,9 @@
 ﻿namespace Roadbed.Test.Unit.IO;
 
+using System;
+using System.IO;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Roadbed.IO;
-using System.IO;
 
 /// <summary>
 /// Contains unit tests for verifying the behavior of the IoFileInfo class.
@@ -38,6 +39,84 @@ public class IoFileInfoTests
         Assert.IsNull(
             instance.Extension,
             "Extension should be null when using parameterless constructor.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that constructor throws exception when path is null.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_NullPath_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string? nullPath = null;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var instance = new IoFileInfo(nullPath!);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "Constructor should throw ArgumentException when path is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that constructor throws exception when path is empty.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_EmptyPath_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string emptyPath = string.Empty;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var instance = new IoFileInfo(emptyPath);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "Constructor should throw ArgumentException when path is empty.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that constructor throws exception when path is whitespace.
+    /// </summary>
+    [TestMethod]
+    public void Constructor_WhitespacePath_ThrowsArgumentException()
+    {
+        // Arrange (Given)
+        string whitespacePath = "   ";
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            var instance = new IoFileInfo(whitespacePath);
+        }
+        catch (ArgumentException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "Constructor should throw ArgumentException when path is whitespace.");
     }
 
     /// <summary>
@@ -135,6 +214,27 @@ public class IoFileInfoTests
     }
 
     /// <summary>
+    /// Unit test to verify that setting FullPath to whitespace sets FileInfo to null.
+    /// </summary>
+    [TestMethod]
+    public void FullPath_SetWhitespace_SetsFileInfoToNull()
+    {
+        // Arrange (Given)
+        var instance = new IoFileInfo(@"C:\TestFolder\TestFile.txt");
+
+        // Act (When)
+        instance.FullPath = "   ";
+
+        // Assert (Then)
+        Assert.IsNull(
+            instance.FileInfo,
+            "FileInfo should be null when FullPath is set to whitespace.");
+        Assert.IsNull(
+            instance.FullPath,
+            "FullPath should be null when set to whitespace.");
+    }
+
+    /// <summary>
     /// Unit test to verify that FullPath returns null when FileInfo is null.
     /// </summary>
     [TestMethod]
@@ -191,6 +291,25 @@ public class IoFileInfoTests
         Assert.IsNull(
             result,
             "Extension should return null when FullPath is empty.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that Extension returns null when FullPath is whitespace.
+    /// </summary>
+    [TestMethod]
+    public void Extension_FullPathIsWhitespace_ReturnsNull()
+    {
+        // Arrange (Given)
+        var instance = new IoFileInfo();
+        instance.FullPath = "   ";
+
+        // Act (When)
+        string? result = instance.Extension;
+
+        // Assert (Then)
+        Assert.IsNull(
+            result,
+            "Extension should return null when FullPath is whitespace.");
     }
 
     /// <summary>
@@ -322,7 +441,81 @@ public class IoFileInfoTests
             "FileInfo should not be null when path is provided to constructor.");
     }
 
+    /// <summary>
+    /// Unit test to verify that FileInfo property contains expected FullName after construction.
+    /// </summary>
+    [TestMethod]
+    public void FileInfo_AfterConstruction_MatchesExpectedFullName()
+    {
+        // Arrange (Given)
+        string testPath = @"C:\TestFolder\TestFile.txt";
+        var instance = new IoFileInfo(testPath);
+
+        // Act (When)
+        FileInfo? result = instance.FileInfo;
+
+        // Assert (Then)
+        Assert.IsNotNull(
+            result,
+            "FileInfo should not be null after construction with valid path.");
+        Assert.Contains(
+            "TestFile.txt",
+            result.FullName,
+            "FileInfo.FullName should contain the expected filename.");
+    }
+
     #endregion FileInfo Property Tests
+
+    #region FileInfo Internal Setter Tests
+
+    /// <summary>
+    /// Unit test to verify that FileInfo internal setter works correctly.
+    /// </summary>
+    [TestMethod]
+    public void FileInfo_SetInternally_UpdatesProperty()
+    {
+        // Arrange (Given)
+        var instance = new IoFileInfo();
+        var systemFileInfo = new FileInfo(@"C:\TestFolder\TestFile.txt");
+
+        // Act (When)
+        instance.FileInfo = systemFileInfo;
+
+        // Assert (Then)
+        Assert.IsNotNull(
+            instance.FileInfo,
+            "FileInfo should not be null after being set internally.");
+        Assert.AreSame(
+            systemFileInfo,
+            instance.FileInfo,
+            "FileInfo should be the same instance that was set.");
+        Assert.IsNotNull(
+            instance.FullPath,
+            "FullPath should be updated when FileInfo is set internally.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that setting FileInfo internally to null updates FullPath.
+    /// </summary>
+    [TestMethod]
+    public void FileInfo_SetInternallyToNull_UpdatesFullPath()
+    {
+        // Arrange (Given)
+        var instance = new IoFileInfo(@"C:\TestFolder\TestFile.txt");
+
+        // Act (When)
+        instance.FileInfo = null;
+
+        // Assert (Then)
+        Assert.IsNull(
+            instance.FileInfo,
+            "FileInfo should be null after being set to null internally.");
+        Assert.IsNull(
+            instance.FullPath,
+            "FullPath should be null when FileInfo is set to null internally.");
+    }
+
+    #endregion FileInfo Internal Setter Tests
 
     #region Integration Tests
 

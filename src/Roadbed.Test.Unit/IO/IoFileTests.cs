@@ -13,6 +13,8 @@ public class IoFileTests
 {
     #region Public Methods
 
+    #region Constructor Tests
+
     /// <summary>
     /// Unit test to verify that the parameterless constructor initializes with null FileInfo.
     /// </summary>
@@ -79,6 +81,10 @@ public class IoFileTests
             "FileInfo should be null when null is passed to constructor.");
     }
 
+    #endregion Constructor Tests
+
+    #region FileInfo Property Tests
+
     /// <summary>
     /// Unit test to verify that FileInfo property can be set to null.
     /// </summary>
@@ -119,6 +125,10 @@ public class IoFileTests
             instance.FileInfo,
             "FileInfo should return the same object that was set.");
     }
+
+    #endregion FileInfo Property Tests
+
+    #region Save Method Tests
 
     /// <summary>
     /// Unit test to verify that Save method creates directory if it does not exist.
@@ -184,7 +194,7 @@ public class IoFileTests
 
             // Act (When)
             instance.Save(newContent);
-            string savedContent = File.ReadAllText(testPath).TrimEnd();
+            string savedContent = File.ReadAllText(testPath);
 
             // Assert (Then)
             Assert.AreEqual(
@@ -372,7 +382,7 @@ public class IoFileTests
         {
             // Act (When)
             instance.Save(fileContent);
-            string savedContent = File.ReadAllText(testPath).TrimEnd();
+            string savedContent = File.ReadAllText(testPath);
 
             // Assert (Then)
             Assert.AreEqual(
@@ -424,6 +434,176 @@ public class IoFileTests
             }
         }
     }
+
+    /// <summary>
+    /// Unit test to verify that Save method returns empty string when file content is whitespace.
+    /// </summary>
+    [TestMethod]
+    public void Save_FileContentIsWhitespace_ReturnsEmptyString()
+    {
+        // Arrange (Given)
+        string testPath = Path.Combine(Path.GetTempPath(), $"test_{Guid.NewGuid()}.txt");
+        var instance = new TestIoFile(new IoFileInfo(testPath));
+        string fileContent = "   ";
+
+        try
+        {
+            // Act (When)
+            string result = instance.Save(fileContent);
+
+            // Assert (Then)
+            Assert.AreEqual(
+                string.Empty,
+                result,
+                "Save method should return empty string when file content is whitespace.");
+        }
+        finally
+        {
+            // Cleanup
+            if (File.Exists(testPath))
+            {
+                File.Delete(testPath);
+            }
+        }
+    }
+
+    #endregion Save Method Tests
+
+    #region ValidateFileInfo Tests
+
+    /// <summary>
+    /// Unit test to verify that ValidateFileInfo throws exception when fileInfo is null.
+    /// </summary>
+    [TestMethod]
+    public void ValidateFileInfo_NullFileInfo_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        IoFileInfo? nullFileInfo = null;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            IoFile.ValidateFileInfo(nullFileInfo);
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "ValidateFileInfo should throw ArgumentNullException when fileInfo is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that ValidateFileInfo throws exception when Extension is null.
+    /// </summary>
+    [TestMethod]
+    public void ValidateFileInfo_NullExtension_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        var fileInfo = new IoFileInfo();
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            IoFile.ValidateFileInfo(fileInfo);
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "ValidateFileInfo should throw ArgumentNullException when Extension is null.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that ValidateFileInfo throws exception when Extension is empty.
+    /// </summary>
+    [TestMethod]
+    public void ValidateFileInfo_EmptyExtension_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        var fileInfo = new IoFileInfo();
+        fileInfo.FullPath = string.Empty;
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            IoFile.ValidateFileInfo(fileInfo);
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "ValidateFileInfo should throw ArgumentNullException when Extension is empty.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that ValidateFileInfo throws exception when Extension is whitespace.
+    /// </summary>
+    [TestMethod]
+    public void ValidateFileInfo_WhitespaceExtension_ThrowsArgumentNullException()
+    {
+        // Arrange (Given)
+        var fileInfo = new IoFileInfo();
+        fileInfo.FullPath = "   ";
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            IoFile.ValidateFileInfo(fileInfo);
+        }
+        catch (ArgumentNullException)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsTrue(
+            exceptionThrown,
+            "ValidateFileInfo should throw ArgumentNullException when Extension is whitespace.");
+    }
+
+    /// <summary>
+    /// Unit test to verify that ValidateFileInfo does not throw exception for valid fileInfo.
+    /// </summary>
+    [TestMethod]
+    public void ValidateFileInfo_ValidFileInfo_DoesNotThrowException()
+    {
+        // Arrange (Given)
+        var fileInfo = new IoFileInfo(@"C:\TestFolder\TestFile.txt");
+        bool exceptionThrown = false;
+
+        // Act (When)
+        try
+        {
+            IoFile.ValidateFileInfo(fileInfo);
+        }
+        catch (Exception)
+        {
+            exceptionThrown = true;
+        }
+
+        // Assert (Then)
+        Assert.IsFalse(
+            exceptionThrown,
+            "ValidateFileInfo should not throw exception when fileInfo is valid.");
+    }
+
+    #endregion ValidateFileInfo Tests
 
     #endregion Public Methods
 

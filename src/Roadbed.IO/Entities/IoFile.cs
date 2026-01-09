@@ -5,8 +5,8 @@
 namespace Roadbed.IO;
 
 using System;
-using System.Collections.Generic;
-using System.Text;
+using System.IO;
+using System.Threading.Tasks;
 
 /// <summary>
 /// Base Entity for IO File related operations.
@@ -38,18 +38,14 @@ public abstract class IoFile
     /// <summary>
     /// Gets or sets the File Info.
     /// </summary>
-    public IoFileInfo? FileInfo
-    {
-        get;
-        set;
-    }
+    public IoFileInfo? FileInfo { get; set; }
 
     #endregion Public Properties
 
     #region Public Methods
 
     /// <summary>
-    /// Saves the file content to the file path specified in <see cref="IoFile.IoFile(IoFileInfo)"/>.
+    /// Saves the file content to the file path specified in <see cref="IoFile(IoFileInfo)"/>.
     /// </summary>
     /// <param name="fileContent">Content of the file to be saved.</param>
     /// <returns>Path to the file that was saved.</returns>
@@ -58,15 +54,34 @@ public abstract class IoFile
         // Validate "In" Properties
         ValidateFileInfo(this.FileInfo!);
 
-        if (string.IsNullOrEmpty(fileContent))
+        if (string.IsNullOrWhiteSpace(fileContent))
         {
             return string.Empty;
         }
 
-        using (StreamWriter streamWriter = new StreamWriter(this.FileInfo!.FullPath!))
+        using StreamWriter streamWriter = new StreamWriter(this.FileInfo!.FullPath!);
+        streamWriter.Write(fileContent);
+
+        return this.FileInfo!.FullPath!;
+    }
+
+    /// <summary>
+    /// Asynchronously saves the file content to the file path specified in <see cref="IoFile(IoFileInfo)"/>.
+    /// </summary>
+    /// <param name="fileContent">Content of the file to be saved.</param>
+    /// <returns>Task that represents the asynchronous operation. The task result contains the path to the file that was saved.</returns>
+    public async Task<string> SaveAsync(string fileContent)
+    {
+        // Validate "In" Properties
+        ValidateFileInfo(this.FileInfo!);
+
+        if (string.IsNullOrWhiteSpace(fileContent))
         {
-            streamWriter.WriteLine(fileContent);
+            return string.Empty;
         }
+
+        await using StreamWriter streamWriter = new StreamWriter(this.FileInfo!.FullPath!);
+        await streamWriter.WriteAsync(fileContent);
 
         return this.FileInfo!.FullPath!;
     }
@@ -76,17 +91,17 @@ public abstract class IoFile
     #region Internal Methods
 
     /// <summary>
-    /// Validates the file info for CSV files.
+    /// Validates the file info for files.
     /// </summary>
     /// <param name="fileInfo">File information to validate.</param>
-    /// <exception cref="ArgumentNullException">File info or file extension is null or empty.</exception>
-    /// <exception cref="ArgumentException">File extension isn't 'CSV'.</exception>
-    internal static void ValidateFileInfo(IoFileInfo fileInfo)
+    /// <exception cref="ArgumentNullException">File info is null or file extension is null or empty.</exception>
+    internal static void ValidateFileInfo(IoFileInfo? fileInfo)
     {
-        if ((fileInfo == null) ||
-            string.IsNullOrEmpty(fileInfo.Extension))
+        ArgumentNullException.ThrowIfNull(fileInfo);
+
+        if (string.IsNullOrWhiteSpace(fileInfo.Extension))
         {
-            throw new ArgumentNullException(nameof(fileInfo), "File info or file extension is null or empty.");
+            throw new ArgumentNullException(nameof(fileInfo), "File extension is null or empty.");
         }
     }
 
