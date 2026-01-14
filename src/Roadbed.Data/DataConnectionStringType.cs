@@ -1,8 +1,4 @@
-﻿/*
- * The namespace Roadbed.Data.Enumerators was removed on purpose and replaced with Roadbed.Data so that no additional using statements are required.
- */
-
-namespace Roadbed.Data;
+﻿namespace Roadbed.Data;
 
 /// <summary>
 /// Types of data connection strings.
