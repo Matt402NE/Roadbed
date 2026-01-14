@@ -1,11 +1,6 @@
-﻿/*
- * The namespace Roadbed.Data.Entities was removed on purpose and replaced with Roadbed.Data so that no additional using statements are required.
- */
-
-namespace Roadbed.Data;
+﻿namespace Roadbed.Data;
 
 using System.Data.Common;
-using System.Diagnostics.CodeAnalysis;
 
 /// <summary>
 /// Entity for data connection string.
@@ -150,32 +145,38 @@ public class DataConnecionString
     /// <returns>Connection string used to access a database.</returns>
     private string CreateConnectionStringForSqlite()
     {
-        string template = """
-            Data Source={0};
+        string template = $$"""
+            Data Source={{this.DatabaseSource}};
             Version=3;
             Compress=True;
             BinaryGUID=false;
             UTF8Encoding=True;
             Foreign Keys=true;
+            Pooling=true;
+            Default Timeout={{this.TimeoutInSeconds}};
             """;
 
-        return string.Format(template, this.DatabaseSource);
+        return template;
     }
 
     /// <summary>
     /// Creates a connection string for an in-memmory SQLite database.
     /// </summary>
     /// <returns>Connection string used to access a database.</returns>
-    [SuppressMessage(
-        "Minor Code Smell",
-        "S2325:Methods and properties that don't access instance data should be static",
-        Justification = "Keeping it non-static to match similar methods.")]
     private string CreateConnectionStringForSqliteInMemory()
     {
-        string template = """
-            Data Source=InMemorySample;
+        // Use DatabaseSource if provided, otherwise use default name
+        string dataSource = string.IsNullOrWhiteSpace(this.DatabaseSource)
+            ? "DefaultInMemory"
+            : this.DatabaseSource;
+
+        string template = $$"""
+            Data Source={{dataSource}};
             Mode=Memory;
             Cache=Shared;
+            Foreign Keys=true;
+            Pooling=true;
+            Default Timeout={{this.TimeoutInSeconds}};
             """;
 
         return template;
