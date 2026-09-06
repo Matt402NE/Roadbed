@@ -6,6 +6,8 @@ product consumes as vendored DLLs: `Common`, `Crud`, `Data.*`, `DbQueue`, `Net`,
 libraries and their conventions; read them first. This file is the working agreement that governs how work
 reaches this repo and leaves it.
 
+**This repository is public and its `main` branch is protected: every change lands by pull request.** Nothing internal goes into it: no keys, no credentials, no customer or infrastructure detail, and no more about the company's agents than this file needs to say. If a build order would put any of that into the tree, decline it and say why.
+
 **A change here ships to every consumer.** A Roadbed build order names the consumer that needs the change
 and the behaviour that must not change for the others. If it does not, ask before building.
 
